@@ -40,6 +40,7 @@
 #include <Adafruit_SHT31.h>
 //#include <Adafruit_APDS9960.h>
 #include <Adafruit_BMP280.h>
+#include <RH_RF95.h>
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //http://librarymanager/All#SparkFun_u-blox_GNSS
 #include <time.h>
 
@@ -49,6 +50,11 @@
 
 // Define the two white LEDs on the front of the Clue Board
 #define WHITE_LED 43
+// Defines for LoRa module
+#define RFM95_CS 16
+#define RFM95_RST 2
+#define RFM95_INT 8
+#define RF95_FREQ 434.0
 
 Adafruit_Arcada arcada;
 Adafruit_LSM6DS33 lsm6ds33;
@@ -60,7 +66,9 @@ extern Adafruit_FlashTransport_QSPI flashTransport;
 extern Adafruit_SPIFlash Arcada_QSPI_Flash;
 SFE_UBLOX_GNSS myGNSS;
 
-//Setup the second serial port that talks to the RockBloc
+//Setup LoRa radio
+RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHMesh manager(rf95,CLIENT_ADDRESS);
 
 #define DIAGNOSTICS false // Change this to see diagnostics
 
@@ -182,6 +190,44 @@ void setup() {
   arcada.display->setTextColor(ARCADA_WHITE);
   arcada.display->println("Sensors Found: ");
 
+  /******** Initialize LoRa Radio*************************
+   * dfd
+   * dfd
+   * */
+
+  pinMode(RFM95_RST, OUTPUT);
+  digitalWrite(RFM95_RST, HIGH);
+
+    Serial.println("Feather LoRa TX Test!");
+
+  // manual reset
+  digitalWrite(RFM95_RST, LOW);
+  delay(10);
+  digitalWrite(RFM95_RST, HIGH);
+  delay(10);
+
+  while (!rf95.init()) {
+    Serial.println("LoRa radio init failed");
+    Serial.println("Uncomment '#define SERIAL_DEBUG' in RH_RF95.cpp for detailed debug info");
+    while (1);
+  }
+  Serial.println("LoRa radio init OK!");
+
+  // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
+  if (!rf95.setFrequency(RF95_FREQ)) {
+    Serial.println("setFrequency failed");
+    while (1);
+  }
+  Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
+  
+  // Defaults after init are 434.0MHz, 13dBm, Bw = 125 kHz, Cr = 4/5, Sf = 128chips/symbol, CRC on
+
+  // The default transmitter power is 13dBm, using PA_BOOST.
+  // If you are using RFM95/96/97/98 modules which uses the PA_BOOST transmitter pin, then 
+  // you can set transmitter powers from 5 to 23 dBm:
+  rf95.setTxPower(23, false);
+
+  int16_t packetnum = 0;  // packet counter, we increment per xmission
 
 /********** Check LSM6DS33 */
   Serial.print("Checking LSM6DS33...");
