@@ -227,8 +227,6 @@ void setup() {
   // you can set transmitter powers from 5 to 23 dBm:
   rf95.setTxPower(23, false);
 
-  int16_t packetnum = 0;  // packet counter, we increment per xmission
-
 /********** Check LSM6DS33 */
   Serial.print("Checking LSM6DS33...");
   if (!lsm6ds33.begin_I2C()) {
@@ -307,6 +305,8 @@ void setup() {
 * Main Loop
 =========================================================*/
 
+int16_t packetnum = 0;  // packet counter, we increment per xmission
+
 void loop() {
   float temp, pres, humidity;
   long GPSLat, GPSLon,GPSAlt;
@@ -320,15 +320,15 @@ void loop() {
   int RTK;
 
 /*!
-  @brief    1 Second Routine
-  @details  At 1 second intervals, collect data, send to Serial and 
+  @brief    5 Second Routine
+  @details  At 5 second intervals, collect data, send to Serial and 
             send data to Flash memory on the Clue Board. This will append
             to the file in case of power failure. File format is as follows
             Temp,Pressure,Humidity,Lat,Lon,Altitude,FixType
   @return   void
 */
   
-  if (millis() - lastTime > 1000)
+  if (millis() - lastTime > 5000)
   {
     // Serial.println("In the 1 sec function");
     lastTime = millis(); //Update the timer
@@ -418,49 +418,43 @@ void loop() {
     /*
      * Print to Serial Output
     TODO: Add under DEBUG statement
+    TODO: Move this to a function to generate the string
   */
-    Serial.print(F("Temp: "));
+    Serial.print(F("$HAR,"));
     Serial.print(temp);
-  
-    Serial.print(F(" Pres: "));
+    Serial.print(",");
     Serial.print(pres);
-  
-    Serial.print(F(" Humid: "));
+    Serial.print(",");
     Serial.println(humidity);
-  
-    Serial.print("Lat: ");
+    Serial.print(",");
     Serial.print(GPSLat);
-    Serial.print(" ");
-    Serial.print("Long: ");
+    Serial.print(",");
     Serial.print(GPSLon);
     //Serial.print(" (degrees * 10^-7)");
     
-    Serial.print(" Alt: ");
+    Serial.print(",");
     Serial.print(GPSAlt);
-    Serial.print(" (mm)");
-  
-    Serial.print(" AltMSL: ");
+    Serial.print(",");
     Serial.print(altitudeMSL);
-    Serial.print(" (mm)");
   
-    Serial.print(" SIV: ");
+    Serial.print(",");
     Serial.print(SIV);
   
-    Serial.print(" Fix: ");
+    Serial.print(",");
     Serial.println(fixType);
+    //TODO Add checksum
   
  }
 
  /*!
-  @brief    1 min interval
-  @details  Take the data collected and transmit via the SatComm
-            It takes to send data, to the Iridium network and
-            unfortunatly this is blocking code. Data is sent as 
+  @brief    1 sec interval
+  @details  Take the data collected and transmit via LoRa radio
+            Data is sent as:
             BERT,Lat,Lon,Altitude,FixType,Temp,Pressure,Humidity,SatQuality
   @return   void
 */
 
-  if (millis() - lastTime2 > 60000)
+  if (millis() - lastTime2 > 1000)
   {
 
     temp = bmp280.readTemperature();
@@ -482,6 +476,46 @@ void loop() {
 
     RTK = myGNSS.getCarrierSolutionType();
 
+    // Testing of sending a packet
+    Serial.println("Transmitting..."); // Send a message to rf95_server
+  
+    char radiopacket[20] = "Hello World #      ";
+    //Intellisense doesn't seem to see ITOA, but this does compile
+    itoa(packetnum++, radiopacket+13, 10);
+    Serial.print("Sending "); Serial.println(radiopacket);
+    radiopacket[19] = 0;
+    
+    Serial.println("Sending...");
+    delay(10);
+    rf95.send((uint8_t *)radiopacket, 20);
+
+    Serial.println("Waiting for packet to complete..."); 
+    delay(10);
+    rf95.waitPacketSent();
+    // Now wait for a reply
+  uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+  uint8_t len = sizeof(buf);
+
+  Serial.println("Waiting for reply...");
+  if (rf95.waitAvailableTimeout(1000))
+  { 
+    // Should be a reply message for us now   
+    if (rf95.recv(buf, &len))
+   {
+      Serial.print("Got reply: ");
+      Serial.println((char*)buf);
+      Serial.print("RSSI: ");
+      Serial.println(rf95.lastRssi(), DEC);    
+    }
+    else
+    {
+      Serial.println("Receive failed");
+    }
+  }
+  else
+  {
+    Serial.println("No reply, is there a listener around?");
+  }
     
     
   }
