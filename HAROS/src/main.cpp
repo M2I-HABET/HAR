@@ -1,7 +1,7 @@
 /*
  * High Altitude Reporter (HAR)
  * HW Version - 0.1
- * FW Version - 0.1
+ * FW Version - 0.3
  * Matthew E. Nelson
  */
 
@@ -31,20 +31,15 @@
 
 #include <Adafruit_Arcada.h>
 #include <Adafruit_SPIFlash.h>
-#include <Wire.h> //Needed for I2C to GNSS GPS
+//#include <Wire.h> //Needed for I2C to GNSS GPS
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include <Adafruit_Sensor.h>
-#include <Adafruit_LSM6DS33.h>
-#include <Adafruit_LIS3MDL.h>
-#include <Adafruit_SHT31.h>
-//#include <Adafruit_APDS9960.h>
-#include <Adafruit_BMP280.h>
-#include <RH_RF95.h>
-#include <SparkFun_u-blox_GNSS_Arduino_Library.h> //http://librarymanager/All#SparkFun_u-blox_GNSS
+
+//#include <RH_RF95.h>
 
 #include <time.h>
-#include "hardware.hpp"
+#include "hardware.h"
 
 /**************************************************************************************************
 ** Declare global variables and instantiate classes                                              **
@@ -54,21 +49,15 @@
 
 // Instantiates functions for hardware
 Adafruit_Arcada arcada;
-Adafruit_LSM6DS33 lsm6ds33;
-Adafruit_LIS3MDL lis3mdl;
-Adafruit_SHT31 sht30;
-//Adafruit_APDS9960 apds9960;
-Adafruit_BMP280 bmp280;
+
 extern Adafruit_FlashTransport_QSPI flashTransport;
 extern Adafruit_SPIFlash Arcada_QSPI_Flash;
-SFE_UBLOX_GNSS myGNSS;
-
-//Setup LoRa radio
-RH_RF95 rf95(RFM95_CS, RFM95_INT);
-// RHMesh manager(rf95,CLIENT_ADDRESS);
 
 // file system object from SdFat
-FatFileSystem fatfs;
+FatFileSystem fs;
+//Setup LoRa radio
+//RH_RF95 rf95(RFM95_CS, RFM95_INT);
+// RHMesh manager(rf95,CLIENT_ADDRESS);
 
 // Check the timer callback, this function is called every millisecond!
 volatile uint16_t milliseconds = 0;
@@ -87,20 +76,79 @@ unsigned long lastTime2 = 0; //Simple local timer. Limits amount if I2C traffic 
 
 void setup() {
   Serial.begin(115200);
-  delay(500);
+  delay(50);
+  Serial.println("--------------------------------------------");
+  delay(5000);
   Serial.println("High Altitude Reporter OS (HAROS)");
   Serial.println("============================================");
-  Serial.println(" HW Rev. 0.1 | FW Rev. 0.2");
+  Serial.println(" HW Rev. 0.1 | FW Rev. 0.3");
   Serial.println("============================================");
-  delay(3000);
 
   init_i2c(DEBUG);
-  init_arcada(DEBUG);
+  pinMode(WHITE_LED, OUTPUT);
+  digitalWrite(WHITE_LED, LOW);
+  if (!arcada.arcadaBegin()) {
+      Serial.println("Failed to start Arcada!");
+      while (1);
+  }
+  arcada.displayBegin();
+
+  for (int i=0; i<250; i+=10) {
+      arcada.setBacklight(i);
+      delay(1);
+  }
+  arcada.display->setCursor(0, 0);
+  arcada.display->setTextWrap(true);
+  arcada.display->setTextSize(2);
   arcada.display->setTextColor(ARCADA_GREEN);
   arcada.display->println("HAROS Booting up...");
-  arcada.display->println("FW Rev: 0.2");
-  init_flash(DEBUG);
+  arcada.display->println("FW Rev: 0.3");
+  /********** Check QSPI manually */
+  if (!Arcada_QSPI_Flash.begin()){
+    Serial.println("Could not find flash on QSPI bus!");
+    arcada.display->setTextColor(ARCADA_RED);
+    arcada.display->println("QSPI Flash FAIL");
+  } else {
+    uint32_t jedec;
+    jedec = Arcada_QSPI_Flash.getJEDECID();
+    Serial.print("JEDEC ID: 0x"); Serial.println(jedec, HEX);
+    arcada.display->setTextColor(ARCADA_GREEN);
+    arcada.display->print("QSPI JEDEC: 0x"); arcada.display->println(jedec, HEX);
+  }
+  
+   /********** Check filesystem next */
+  if (!arcada.filesysBegin()) {
+    Serial.println("Failed to load filesys");
+    arcada.display->setTextColor(ARCADA_YELLOW);
+    arcada.display->println("Filesystem not found");
+  } else {
+    Serial.println("Filesys OK!");
+    arcada.display->setTextColor(ARCADA_GREEN);
+    arcada.display->println("Filesystem OK");
+  }
+
+  arcada.display->setTextColor(ARCADA_WHITE);
+  arcada.display->println("Sensors Found: ");
+  // Initialize flash library and check its chip ID.
+  /*
+  if (!Arcada_QSPI_Flash.begin()) {
+    Serial.println("Error, failed to initialize flash chip!");
+    //while(1);
+  }
+  Serial.print("Setting up Filesystem...OK");
+  Serial.println("Flash chip JEDEC ID: 0x"); Serial.println(Arcada_QSPI_Flash.getJEDECID(), HEX);
+
+  // First call begin to mount the filesystem.  Check that it returns true
+  // to make sure the filesystem was mounted.
+  if (!fs.begin(&Arcada_QSPI_Flash)) {
+    Serial.println("Error, failed to mount newly formatted filesystem!");
+    Serial.println("Was the flash chip formatted with the fatfs_format example?");
+    while(1);
+  }
+  
+  Serial.println("Mounting Filesystem...OK");
   arcada.display->println("Memory...OK");
+  */
   init_gps(DEBUG);
   arcada.display->println("GPS...ONLINE");
   init_bmp280(DEBUG);
@@ -125,7 +173,6 @@ void setup() {
 int16_t packetnum = 0;  // packet counter, we increment per transmission
 
 void loop() {
-  float temp, pres, humidity;
 
 /*!
   @brief    5 Second Routine
@@ -140,13 +187,11 @@ void loop() {
   {
     // Serial.println("In the 1 sec function");
     lastTime = millis(); //Update the timer
-    temp = bmp280.readTemperature();
-    pres = bmp280.readPressure()/100;
-    humidity = sht30.readHumidity();
-    
 
   // Open the datalogging file for writing.  The FILE_WRITE mode will open
   // the file for appending, i.e. it will add new data to the end of the file.
+
+  /*
   File dataFile = fatfs.open(FILE_NAME, FILE_WRITE);
   
   // Check that the file opened successfully and write a line to it.
@@ -167,7 +212,7 @@ void loop() {
   else {
     Serial.println("Failed to open data file for writing!");
   }
-
+*/
   /*
    * Update the Arcada Display
    */
@@ -177,17 +222,17 @@ void loop() {
     arcada.display->setCursor(0, 0);
     
     arcada.display->print("Temp: ");
-    arcada.display->print(temp);
+    //arcada.display->print(temp);
     arcada.display->print(" C");
     arcada.display->println("         ");
     
     arcada.display->print("Baro: ");
-    arcada.display->print(pres);
+    //arcada.display->print(pres);
     arcada.display->print(" hPa");
     arcada.display->println("         ");
     
     arcada.display->print("Humid: ");
-    arcada.display->print(humidity);
+    //arcada.display->print(humidity);
     arcada.display->print(" %");
     arcada.display->println("         ");
   
@@ -198,11 +243,11 @@ void loop() {
     TODO: Move this to a function to generate the string
   */
     Serial.print(F("$HAR,"));
-    Serial.print(temp);
+    //Serial.print(temp);
     Serial.print(",");
-    Serial.print(pres);
+    //Serial.print(pres);
     Serial.print(",");
-    Serial.println(humidity);
+    //Serial.println(humidity);
     Serial.print(",");
     //TODO Add checksum
   
@@ -218,11 +263,7 @@ void loop() {
 
   if (millis() - lastTime2 > 1000)
   {
-    temp = bmp280.readTemperature();
-    pres = bmp280.readPressure()/100;
-    humidity = sht30.readHumidity();
-    
-
+    /*
     // Testing of sending a packet
     Serial.println("Transmitting..."); // Send a message to rf95_server
   
@@ -262,6 +303,7 @@ void loop() {
     else
     {
       Serial.println("No reply, is there a listener around?");
-    } 
+    }
+    */
   }
 }

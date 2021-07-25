@@ -13,8 +13,8 @@
   @return    Depends
   */
 
-#ifndef HARDWARE_HPP
-#define HARDWARE_HPP
+#ifndef HARDWARE_H
+#define HARDWARE_H
 
 // Defines
 // Configuration for the datalogging file:
@@ -33,17 +33,15 @@
 
 typedef struct gps_data gps_data;
 
+typedef struct environ_data envrion_data;
+
 // uint32_t buttons, last_buttons;
 
 /* Functions declarations
 ============================
 */
 
- void init_arcada (bool debug);
-
  void init_i2c (bool debug);
-
- void init_flash(bool debug);
 
  void init_lora(bool debug);
 
@@ -59,4 +57,8 @@ typedef struct gps_data gps_data;
 
  gps_data read_gps(void);
 
-#endif /* STARTUP_HPP_ */
+ environ_data read_environ(void);
+
+
+
+#endif /* STARTUP_H */

@@ -42,11 +42,11 @@
 ============================
 */
 #include <Arduino.h>
-#include <Adafruit_Arcada.h>
-#include <Adafruit_SPIFlash.h>
+//#include <Adafruit_Arcada.h>
+//#include <Adafruit_SPIFlash.h>
 #include <Wire.h> //Needed for I2C to GNSS GPS
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
+//#include <Adafruit_GFX.h>    // Core graphics library
+//#include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM6DS33.h>
 #include <Adafruit_LIS3MDL.h>
@@ -55,27 +55,28 @@
 #include <Adafruit_BMP280.h>
 #include <RH_RF95.h>
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //http://librarymanager/All#SparkFun_u-blox_GNSS
-#include <time.h>
-#include "hardware.hpp"
+//#include <time.h>
+#include "hardware.h"
 
 // Instantiates functions for hardware
-Adafruit_Arcada arcad;
+
 Adafruit_LSM6DS33 lsm;
 Adafruit_LIS3MDL lis;
-Adafruit_SHT31 sht;
+Adafruit_SHT31 sht30;
 //Adafruit_APDS9960 apds9960;
-Adafruit_BMP280 bmp;
-extern Adafruit_FlashTransport_QSPI flashTransport;
-extern Adafruit_SPIFlash Arcada_QSPI_Flash;
+Adafruit_BMP280 bmp280;
+
 SFE_UBLOX_GNSS GNSS;
 
 //Setup LoRa radio
 RH_RF95 lora(RFM95_CS, RFM95_INT);
 // RHMesh manager(rf95,CLIENT_ADDRESS);
 
-// file system object from SdFat
-FatFileSystem fs;
-
+/* GPS Structure
+* GPS struct that contains the following info:
+* Latitude, Longitude, Altitude, MSL Altitude,
+* SIV, Data/Time, Fix Type and RTK value.
+*/
 struct gps_data {
     long GPSLat;
     long GPSLon;
@@ -92,6 +93,12 @@ struct gps_data {
     int RTK;
 };
 
+struct environ_data {
+    float temp;
+    float pres;
+    float humidity;
+};
+
 /*!
   @brief     Initialize I2C Bus
   @details   Initialize the I2C bus, there is no indication if this works or not
@@ -104,75 +111,7 @@ void init_i2c (bool debug){
         Serial.println("Initializing I2C Bus....OK");
     }
 }
-/*!
-  @brief     Initialize Arcada
-  @details   Initialize the Arcada library and setup the display. Arcada allows us to
-             tap into several functions useful for built in display on the Clue board
-             and for talking to the Neopixel that is onboard
-  @param[in] debug    If true, output to the serial port
-  @return    None
-  */
-void init_arcada (bool debug){
-    pinMode(WHITE_LED, OUTPUT);
-    digitalWrite(WHITE_LED, LOW);
-    if (!arcad.arcadaBegin()) {
-        Serial.println("Failed to start Arcada!");
-        while (1);
-    }
-    if (debug){
-        Serial.println("Booting up Arcada...OK");
-    }
-    arcad.displayBegin();
 
-    for (int i=0; i<250; i+=10) {
-        arcad.setBacklight(i);
-        delay(1);
-    }
-
-    arcad.display->setCursor(0, 0);
-    arcad.display->setTextWrap(true);
-    arcad.display->setTextSize(2);
-    if (debug) {
-        Serial.println("Setting up Display...OK");
-    }
-
-}
-
-/*!
-  @brief     Initialize QSPI Flash memory
-  @details   Initialize the onboard QSPI Flash memory on the Clue board
-             This will not make a filesystem, this needs to be done first
-             To make a filesystem, simply flash a CircuitPython UF2 file
-             and then reload the HAROS. If this fails, it is usually due to
-             the filesystem not being created. 
-  @param[in] debug    If true, output to the serial port
-  @return    None
-*/
-void init_flash(bool debug){
-
-    /********** Setup QSPI Flash Memory */
-    // Initialize flash library and check its chip ID.
-    if (!Arcada_QSPI_Flash.begin()) {
-        Serial.println("Error, failed to initialize flash chip!");
-    while(1);
-    }
-    if (debug) {
-        Serial.print("Setting up Filesystem...OK");
-        Serial.println("Flash chip JEDEC ID: 0x"); Serial.println(Arcada_QSPI_Flash.getJEDECID(), HEX);
-        
-    }
-
-    // First call begin to mount the filesystem.  Check that it returns true
-    // to make sure the filesystem was mounted.
-    if (!fs.begin(&Arcada_QSPI_Flash)) {
-        Serial.println("Error, failed to mount newly formatted filesystem!");
-        Serial.println("Was the flash chip formatted with the fatfs_format example?");
-        while(1);
-    }
-    if (debug) {
-        Serial.println("Mounting Filesystem...OK");
-    }
-}
 
 /*!
   @brief     Initialize LoRa module
@@ -252,6 +191,13 @@ void init_gps(bool debug) {
     }
 }
 
+/*!
+  @brief     Initialize LSM6D33 module
+  @details   Initialize the LSM6D33 Accel/Gyro Sensor.
+             This module is hardwired on the Clue board
+  @param[in] debug    If true, output to the serial port
+  @return
+*/
 void init_lsm6ds33 (bool debug) {
     if (!lsm.begin_I2C()) {
         Serial.println("No LSM6DS33 found!");
@@ -263,6 +209,13 @@ void init_lsm6ds33 (bool debug) {
     }
 }
 
+/*!
+  @brief     Initialize LIS3MDL module
+  @details   Initialize the LIS3MDL Magnetometer.
+             This module is hardwired on the Clue board
+  @param[in] debug    If true, output to the serial port
+  @return
+*/
 void init_lis3mdl (bool debug) {
     if (!lis.begin_I2C()) {
         Serial.println("No LIS3MDL found!");
@@ -274,8 +227,15 @@ void init_lis3mdl (bool debug) {
     }
 }
 
+/*!
+  @brief     Initialize SHT30 module
+  @details   Initialize the SHT30 temperature and humidity sensor.
+             This module is hardwired on the Clue board
+  @param[in] debug    If true, output to the serial port
+  @return
+*/
 void init_sht30 (bool debug) {
-    if (!sht.begin(0x44)) {
+    if (!sht30.begin(0x44)) {
         Serial.println("No SHT30 found");
     } 
     if (debug) {
@@ -283,9 +243,16 @@ void init_sht30 (bool debug) {
     }
 }
 
+/*!
+  @brief     Initialize BMP280 module
+  @details   Initialize the BMP280 temperature and pressure sensor.
+             This module is hardwired on the Clue board
+  @param[in] debug    If true, output to the serial port
+  @return
+*/
 void init_bmp280 (bool debug) {
     /********** Check BMP280 */
-    if (!bmp.begin()) {
+    if (!bmp280.begin()) {
         Serial.println("No BMP280 found");
     } 
     if (debug) {
@@ -294,6 +261,15 @@ void init_bmp280 (bool debug) {
     
 }
 
+/*!
+  @brief     Read data from GPS sensor
+  @details   Read data from the Sparkfun GPS sensor.
+             Currently this is setup to read Latitude,
+             Longitude, Altitude (including MSL), date
+             and time info and satellite information.
+  @param[in] void Nothing is passed in
+  @return struct gps_data - Returns a struct with GPS data
+*/
 gps_data read_gps(void) {
 
     gps_data GPS;
@@ -313,5 +289,25 @@ gps_data read_gps(void) {
     GPS.RTK = GNSS.getCarrierSolutionType();
 
     return GPS;
+}
+
+/*!
+  @brief     Initialize LIS3MDL module
+  @details   Initialize the LIS3MDL Magnetometer.
+             This module is hardwired on the Clue board
+  @param[in] debug    If true, output to the serial port
+  @return
+*/
+environ_data read_environ(void) {
+
+    envrion_data env;
+    env.temp = bmp280.readTemperature();
+    env.humidity = sht30.readHumidity();
+    env.pres = bmp280.readPressure()/100;
+
+    return env;
+}
+
+void send_packet(char data) {
 
 }
