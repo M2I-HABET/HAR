@@ -5,29 +5,35 @@
  */
 
 /*!
-  @brief     Startup Routine
-  @details   C code used to setup devices and sensors on the Clue Board. All 
-             functions have a debug option. If set to false, only error messages
-             will be printed. If true, then additional messages will be sent to
-             the serial port.
+  @brief     Data Builder
+  @details   These functions are used to build up the data strings
+             used for either transmission or storage of data. All 
+             transmitted strings need to formatted in the following 
+             way:
 
-             Startup timeline
-             When calling the routines, they should be called in this order.
-             init_i2C->init_arcada
+             $IDENT,!TYPE,TIMESTAMP,[DATA],#CHECKSUM
 
-             Failure Modes
-             Certain failures will cause the bootup sequence to stop. These include
-             LoRa failure, GPS failure, FLASH memory failure and Arcada failure.
+             IDENT
+             IDENT is the identification of the system that is sending the data. 
+             We typically fly with at least two systems, usually HAR and BERT.
+             This helps to identify which string came from what system.
 
-             Neopixel Error modes
-             The following relate to certain failures during bootup. Since Arcada
-             is used to control the Neopixel, an Arcada failure results in the red
-             LED on D13 to flash. If an error occurs, turn on debugging and check
-             the serial output. In many cases, a failure is probably a hardware failure
-             and may indicate a bad Clue board.
-
-             Arcada Failure - D13 LED Flashes
-             FLASH Failure - Solid Blue
-             LoRa Failure - Solid Red
+             TYPE
+             Type is 
 
   */
+
+ /* Includes
+============================
+*/
+#include <Arduino.h>
+
+//#include <time.h>
+#include "hardware.h"
+
+char *gps_string (char *ident) {
+
+  char typepkt[5] = "GPS";
+  
+
+}

@@ -69,7 +69,7 @@ Adafruit_BMP280 bmp280;
 SFE_UBLOX_GNSS GNSS;
 
 //Setup LoRa radio
-RH_RF95 lora(RFM95_CS, RFM95_INT);
+RH_RF95 rf95(RFM95_CS, RFM95_INT);
 // RHMesh manager(rf95,CLIENT_ADDRESS);
 
 /* GPS Structure
@@ -77,27 +77,8 @@ RH_RF95 lora(RFM95_CS, RFM95_INT);
 * Latitude, Longitude, Altitude, MSL Altitude,
 * SIV, Data/Time, Fix Type and RTK value.
 */
-struct gps_data {
-    long GPSLat;
-    long GPSLon;
-    long GPSAlt;
-    long altitudeMSL;
-    byte SIV;
-    int Year;
-    int Month;
-    int Day;
-    int Hour;
-    int Minute;
-    int Second;
-    byte fixType;
-    int RTK;
-};
 
-struct environ_data {
-    float temp;
-    float pres;
-    float humidity;
-};
+
 
 /*!
   @brief     Initialize I2C Bus
@@ -142,18 +123,18 @@ void init_lora(bool debug) {
     digitalWrite(RFM95_RST, HIGH);
     delay(10);
 
-    while (!lora.init()) {
+    while (!rf95.init()) {
         Serial.println("LoRa radio init failed");
         Serial.println("Uncomment '#define SERIAL_DEBUG' in RH_RF95.cpp for detailed debug info");
         while (1);
     }
 
     // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
-    if (!lora.setFrequency(RF95_FREQ)) {
+    if (!rf95.setFrequency(RF95_FREQ)) {
         Serial.println("setFrequency failed");
         while (1);
     }
-    lora.setTxPower(RF95_PWR, false);
+    rf95.setTxPower(RF95_PWR, false);
     if (debug) {
         Serial.println("LoRa radio init...OK");
         Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
@@ -171,7 +152,6 @@ void init_lora(bool debug) {
   @return
 */
 void init_gps(bool debug) {
-    Serial.print("Initializing GPS Sensor....");
 
     if (GNSS.begin() == false)
     {
@@ -308,6 +288,48 @@ environ_data read_environ(void) {
     return env;
 }
 
-void send_packet(char data) {
+void send_packet(char *data) {
+    //int packetnum = 0;
+
+    // Testing of sending a packet
+    Serial.println("Transmitting..."); // Send a message to rf95_server
+  
+    //char radiopacket[20] = "Hello World #      ";
+    //Intellisense doesn't seem to see ITOA, but this does compile
+    //itoa(packetnum++, data+13, 10);
+    Serial.print("Sending "); Serial.println(data);
+    //radiopacket[19] = 0;
+    
+    Serial.println("Sending...");
+    delay(10);
+    rf95.send((uint8_t *)data, 20);
+
+    Serial.println("Waiting for packet to complete..."); 
+    delay(10);
+    rf95.waitPacketSent();
+    // Now wait for a reply
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+    uint8_t len = sizeof(buf);
+
+    Serial.println("Waiting for reply...");
+    if (rf95.waitAvailableTimeout(1000))
+      { 
+      // Should be a reply message for us now   
+        if (rf95.recv(buf, &len))
+        {
+          Serial.print("Got reply: ");
+          Serial.println((char*)buf);
+          Serial.print("RSSI: ");
+          Serial.println(rf95.lastRssi(), DEC);    
+        }
+      else
+      {
+        Serial.println("Receive failed");
+      }
+    }
+    else
+    {
+      Serial.println("No reply, is there a listener around?");
+    }
 
 }

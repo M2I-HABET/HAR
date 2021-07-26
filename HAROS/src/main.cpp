@@ -1,32 +1,30 @@
-/*
+/*!
  * High Altitude Reporter (HAR)
  * HW Version - 0.1
  * FW Version - 0.3
  * Matthew E. Nelson
  */
 
-/*
- * Some code based on the following Libraries
- * - Sparkfun GNSS Library
- * - Adafruit Arcada
- * 
+/*!
+  @brief     Main Functions
+  @details   Main function handles the timer functions which times when certain tasks
+             are called. 
+
+             
+********HARDWARE REQUIREMENTS*****************
+  - Adafruit Clue Board
+  - Sparkfun Neo GPS Unit 
+  - Adafruit LoRa board
+
+Hardware hookup is via QWICC Connector
+(CLUE <-> [QWIIC] <----> [QWIIC] <-> Sparkfun GPS BOB
+   ^
+   |Micro::Bit breakout board
+   |LoRa Breakout Board
+
+  @note - Clue board requires 3-6 VDC (different from Micro:bit) Recommend using 3 AA or Boost board
  */
 
-/********HARDWARE REQUIREMENTS*****************
- * - Adafruit Clue Board
- * - Sparkfun Neo GPS Unit 
- * - Adafruit LoRa board
- * 
- * Hardware hookup is via QWICC Connector
- * (CLUE <-> [QWIIC] <----> [QWIIC] <-> Sparkfun GPS BOB
- *   ^
- *   |Micro::Bit breakout board
- *   LoRa Breakout Board
- * 
- * NOTE - Clue board requires 3-6 VDC (different from Micro:bit)
- * Recommend using 3 AA or Boost board
- * 
- * *********************************************/
 #include <Arduino.h>
 
 #include <Adafruit_Arcada.h>
@@ -217,39 +215,77 @@ void loop() {
    * Update the Arcada Display
    */
 
+    envrion_data ev = read_environ();
+
+    gps_data gps = read_gps();
+
     arcada.display->fillScreen(ARCADA_BLACK);
     arcada.display->setTextColor(ARCADA_WHITE, ARCADA_BLACK);
     arcada.display->setCursor(0, 0);
     
     arcada.display->print("Temp: ");
-    //arcada.display->print(temp);
+    arcada.display->print(ev.temp);
     arcada.display->print(" C");
     arcada.display->println("         ");
     
     arcada.display->print("Baro: ");
-    //arcada.display->print(pres);
+    arcada.display->print(ev.pres);
     arcada.display->print(" hPa");
     arcada.display->println("         ");
     
     arcada.display->print("Humid: ");
-    //arcada.display->print(humidity);
+    arcada.display->print(ev.humidity);
     arcada.display->print(" %");
+    arcada.display->println("         ");
+
+    arcada.display->print("Lat: ");
+    arcada.display->print(gps.GPSLat);
+    arcada.display->print(" ");
+    arcada.display->println("         ");
+
+    arcada.display->print("Lon: ");
+    arcada.display->print(gps.GPSLon);
+    arcada.display->print(" ");
+    arcada.display->println("         ");
+
+    arcada.display->print("Alt: ");
+    arcada.display->print(gps.GPSAlt);
+    arcada.display->print(" mm");
     arcada.display->println("         ");
   
 
-    /*
+    /*!
      * Print to Serial Output
-    TODO: Add under DEBUG statement
-    TODO: Move this to a function to generate the string
+    @TODO: Add under DEBUG statement
+    @TODO: Move this to a function to generate the string
   */
+    
     Serial.print(F("$HAR,"));
-    //Serial.print(temp);
+    Serial.print("!GPS,");
+    Serial.print(gps.Month);
+    Serial.print(gps.Day);
+    Serial.print(gps.Year);
+    Serial.print("-");
+    Serial.print(gps.Hour);
+    Serial.print(":");
+    Serial.print(gps.Minute);
+    Serial.print(":");
+    Serial.print(gps.Second);
     Serial.print(",");
-    //Serial.print(pres);
+    Serial.print(gps.GPSLat);
     Serial.print(",");
-    //Serial.println(humidity);
+    Serial.print(gps.GPSLon);
     Serial.print(",");
-    //TODO Add checksum
+    Serial.print(gps.GPSAlt);
+    Serial.print(",");
+    Serial.print(gps.fixType);
+    Serial.print(",");
+    Serial.print(ev.temp);
+    Serial.print(",");
+    Serial.print(ev.pres);
+    Serial.print(",");
+    Serial.println(ev.humidity);
+    //@TODO Add checksum
   
  }
 
@@ -263,47 +299,35 @@ void loop() {
 
   if (millis() - lastTime2 > 1000)
   {
-    /*
-    // Testing of sending a packet
-    Serial.println("Transmitting..."); // Send a message to rf95_server
-  
-    char radiopacket[20] = "Hello World #      ";
-    //Intellisense doesn't seem to see ITOA, but this does compile
-    itoa(packetnum++, radiopacket+13, 10);
-    Serial.print("Sending "); Serial.println(radiopacket);
-    radiopacket[19] = 0;
+    envrion_data ev = read_environ();
+
+    gps_data gps = read_gps();
+
+    char buf[100] = {0};
+    char pos[100] = {0};
+    strcpy(pos,"$HAR,");
+    itoa(gps.GPSLat, buf, 10);
+    strcat(pos,buf);
+    strcat(pos,",");
+    itoa(gps.GPSLon, buf, 10);
+    strcat(pos,buf);
+    strcat(pos,",");
+    itoa(gps.GPSAlt, buf, 10);
+    strcat(pos,buf);
+    strcat(pos,",");
+    sprintf(buf,"%.02f",ev.temp);
+    strcat(pos,buf);
+    strcat(pos,",");
+    sprintf(buf,"%.02f",ev.humidity);
+    strcat(pos,buf);
+    strcat(pos,",");
+    sprintf(buf,"%.02f",ev.pres);
+    strcat(pos,buf);
+    Serial.println(pos);
+    send_packet(pos);
+    memset(buf,0,100);
+    memset(pos,0,100);
+
     
-    Serial.println("Sending...");
-    delay(10);
-    rf95.send((uint8_t *)radiopacket, 20);
-
-    Serial.println("Waiting for packet to complete..."); 
-    delay(10);
-    rf95.waitPacketSent();
-    // Now wait for a reply
-    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-    uint8_t len = sizeof(buf);
-
-    Serial.println("Waiting for reply...");
-    if (rf95.waitAvailableTimeout(1000))
-      { 
-      // Should be a reply message for us now   
-        if (rf95.recv(buf, &len))
-        {
-          Serial.print("Got reply: ");
-          Serial.println((char*)buf);
-          Serial.print("RSSI: ");
-          Serial.println(rf95.lastRssi(), DEC);    
-        }
-      else
-      {
-        Serial.println("Receive failed");
-      }
-    }
-    else
-    {
-      Serial.println("No reply, is there a listener around?");
-    }
-    */
   }
 }

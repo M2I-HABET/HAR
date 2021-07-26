@@ -33,7 +33,29 @@
 
 typedef struct gps_data gps_data;
 
+struct gps_data {
+    long GPSLat;
+    long GPSLon;
+    long GPSAlt;
+    long altitudeMSL;
+    byte SIV;
+    int Year;
+    int Month;
+    int Day;
+    int Hour;
+    int Minute;
+    int Second;
+    byte fixType;
+    int RTK;
+};
+
 typedef struct environ_data envrion_data;
+
+struct environ_data {
+    float temp;
+    float pres;
+    float humidity;
+};
 
 // uint32_t buttons, last_buttons;
 
@@ -59,6 +81,6 @@ typedef struct environ_data envrion_data;
 
  environ_data read_environ(void);
 
-
+ void send_packet(char *data);
 
 #endif /* STARTUP_H */
