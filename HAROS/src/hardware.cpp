@@ -302,7 +302,7 @@ void send_packet(char *data) {
     
     Serial.println("Sending...");
     delay(10);
-    rf95.send((uint8_t *)data, 20);
+    rf95.send((uint8_t *)data, 50);
 
     Serial.println("Waiting for packet to complete..."); 
     delay(10);
@@ -331,5 +331,12 @@ void send_packet(char *data) {
     {
       Serial.println("No reply, is there a listener around?");
     }
+
+}
+
+/*!
+@TODO move receive part into this function, use interrrupts
+*/
+char rx_packet(void) {
 
 }

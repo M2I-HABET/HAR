@@ -83,4 +83,6 @@ struct environ_data {
 
  void send_packet(char *data);
 
+ char rx_packet(void);
+
 #endif /* STARTUP_H */
