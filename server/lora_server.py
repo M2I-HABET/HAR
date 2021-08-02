@@ -71,7 +71,6 @@ while True:
             display.text('RX: ', 0, 0, 1)
             display.text(packet_text, 25, 0, 1)
             print(packet_text)
-            
             rssi = bytes(rfm9x.rssi+256)
             rssi_packet = rssi
             rfm9x.send(rssi_packet)
