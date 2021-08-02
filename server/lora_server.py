@@ -63,18 +63,22 @@ while True:
         display.text('- Waiting for PKT -', 15, 20, 1)
     else:
         # Display the packet text and rssi
-        
-        display.fill(0)
-        prev_packet = packet
-        packet_text = str(prev_packet, "utf-8")
-        display.text('RX: ', 0, 0, 1)
-        display.text(packet_text, 25, 0, 1)
-        print(packet_text)
-        
-        rssi = bytes(rfm9x.rssi+256)
-        rssi_packet = rssi
-        rfm9x.send(rssi_packet)
-        time.sleep(1)
+        try :
+            display.fill(0)
+            prev_packet = packet
+            # packet_text = str(prev_packet, "utf-8")
+            packet_text = prev_packet.decode('utf-8')
+            display.text('RX: ', 0, 0, 1)
+            display.text(packet_text, 25, 0, 1)
+            print(packet_text)
+            
+            rssi = bytes(rfm9x.rssi+256)
+            rssi_packet = rssi
+            rfm9x.send(rssi_packet)
+        except UnicodeDecodeError:
+            print("\n\nPacket error\n\n")
+        finally :
+            time.sleep(1)
 
     if not btnA.value:
         # Send Button A
