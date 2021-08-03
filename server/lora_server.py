@@ -57,6 +57,7 @@ port = 4444
 # Create socket for server
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
 # print("Do Ctrl+c to exit the program !!")
+s.connect((ip,port))
 
 while True:
     packet = None
