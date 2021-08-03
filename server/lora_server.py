@@ -14,6 +14,7 @@ import board
 import adafruit_ssd1306
 # Import RFM9x
 import adafruit_rfm9x
+import socket
 
 # Button A
 btnA = DigitalInOut(board.D5)
@@ -49,6 +50,16 @@ spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, 434.0)
 rfm9x.tx_power = 23
 prev_packet = None
+print("LoRa Started")
+
+# Configure UDP port for information streaming
+ip = "192.168.1.205"
+port = 4440
+# Create socket for server
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+# print("Do Ctrl+c to exit the program !!")
+s.connect((ip,port))
+print("Connection to server completed")
 
 while True:
     packet = None
@@ -64,41 +75,54 @@ while True:
     else:
         # Display the packet text and rssi
         try :
+            # Try to get the packet via LoRa
             display.fill(0)
             prev_packet = packet
-            # packet_text = str(prev_packet, "utf-8")
-            packet_text = prev_packet.decode('utf-8')
+            packet_text = prev_packet.decode('utf-8') # if the packet is not in unicode then it will fail and print the error message
+
+            # Display the data to the screen and cmd line
             display.text('RX: ', 0, 0, 1)
             display.text(packet_text, 25, 0, 1)
             print(packet_text)
-            rssi = bytes(rfm9x.rssi+256)
-            rssi_packet = rssi
-            rfm9x.send(rssi_packet)
+            # try to send the data to the penthouse machine
+            try :
+		send_packet = packet_text + "," + str(bytes(rfm9x.rssi+256))
+		s.send(send_packe.encode('utf-8')) # we do not need to encode this into utf since it should already be encoded that way 
+                rec_data = s.recv(4096)
+                print("Data recieved: ", rec_data.decode('utf-8'))
+            except Exception as e:
+                print("\n\nUnable to send/recieve data.  Error: ")
+                print(e)
+            # Send back the rssi data to the payload
+           rssi = bytes(rfm9x.rssi+256)
+           rssi_packet = rssi
+           rfm9x.send(rssi_packet)
         except UnicodeDecodeError:
             print("\n\nPacket error\n\n")
         finally :
             time.sleep(1)
 
-    if not btnA.value:
-        # Send Button A
-        display.fill(0)
-        button_a_data = bytes("Button A!\r\n","utf-8")
-        rfm9x.send(button_a_data)
-        display.text('Sent Button A!', 25, 15, 1)
-    elif not btnB.value:
-        # Send Button B
-        display.fill(0)
-        button_b_data = bytes("Button B!\r\n","utf-8")
-        rfm9x.send(button_b_data)
-        display.text('Sent Button B!', 25, 15, 1)
-    elif not btnC.value:
-        # Send Button C
-        display.fill(0)
-        button_c_data = bytes("Button C!\r\n","utf-8")
-        rfm9x.send(button_c_data)
-        display.text('Sent Button C!', 25, 15, 1)
+    # if not btnA.value:
+    #     # Send Button A
+    #     display.fill(0)
+    #     button_a_data = bytes("Button A!\r\n","utf-8")
+    #     rfm9x.send(button_a_data)
+    #     display.text('Sent Button A!', 25, 15, 1)
+    # elif not btnB.value:
+    #     # Send Button B
+    #     display.fill(0)
+    #     button_b_data = bytes("Button B!\r\n","utf-8")
+    #     rfm9x.send(button_b_data)
+    #     display.text('Sent Button B!', 25, 15, 1)
+    # elif not btnC.value:
+    #     # Send Button C
+    #     display.fill(0)
+    #     button_c_data = bytes("Button C!\r\n","utf-8")
+    #     rfm9x.send(button_c_data)
+    #     display.text('Sent Button C!', 25, 15, 1)
 
 
     display.show()
     time.sleep(0.1)
 
+s.close()
