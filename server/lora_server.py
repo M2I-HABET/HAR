@@ -50,14 +50,17 @@ spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, 434.0)
 rfm9x.tx_power = 23
 prev_packet = None
+print("LoRa Started")
 
 # Configure UDP port for information streaming
-ip = "192.168.1.31"
-port = 4444
+ip = "192.168.1.205"
+port = 4440
 # Create socket for server
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
 # print("Do Ctrl+c to exit the program !!")
 s.connect((ip,port))
+
+print("Connection to server completed")
 
 while True:
     packet = None
@@ -84,7 +87,8 @@ while True:
             print(packet_text)
             # try to send the data to the penthouse machine
             try :
-                s.send(prev_packet) # we do not need to encode this into utf since it should already be encoded that way 
+                send_packet = packet_text + "," + str(bytes(rfm9x.rssi+256))
+                s.send(send_packet.encode('utf-8')) # we do not need to encode this into utf since it should already be encoded that way 
                 rec_data = s.recv(4096)
                 print("Data recieved: ", rec_data.decode('utf-8'))
             except Exception as e:
@@ -94,7 +98,6 @@ while True:
             rssi = bytes(rfm9x.rssi+256)
             rssi_packet = rssi
             rfm9x.send(rssi_packet)
-            
         except UnicodeDecodeError:
             print("\n\nPacket error\n\n")
         finally :
