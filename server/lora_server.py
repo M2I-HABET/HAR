@@ -64,6 +64,9 @@ except Exception as e :
 print("Connection to server completed")
 logging.info("Connection to server completed")
 
+# Open file to save GPS log data for testing and data saving purposes
+f = open('datalog.txt', 'a')
+
 last_pkt_time = None
 while True:
     packet = None
@@ -97,6 +100,7 @@ while True:
                 print("Data recieved: ", rec_data.decode('utf-8'))
                 last_pkt_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
                 print("Time: ", last_pkt_time)
+                print(rec_data, "\t", last_pkt_time, file=f)
             except Exception as e:
                 logging.error("\n\nUnable to send/recieve data.  Error: ")
                 logging.error(e)
@@ -116,3 +120,4 @@ while True:
     time.sleep(0.1)
 
 s.close()
+f.close()
