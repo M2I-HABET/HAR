@@ -115,7 +115,7 @@ void init_lora(bool debug) {
     pinMode(RFM95_RST, OUTPUT);
     digitalWrite(RFM95_RST, HIGH);
 
-    Serial.println("Feather LoRa TX Test!");
+    //Serial.println("Feather LoRa TX Test!");
 
     // manual reset
     digitalWrite(RFM95_RST, LOW);
@@ -320,26 +320,25 @@ void send_packet(char *data) {
     //int packetnum = 0;
 
     // Testing of sending a packet
-    Serial.println("Transmitting..."); // Send a message to rf95_server
+    //Serial.println("Transmitting..."); // Send a message to rf95_server
   
     //char radiopacket[20] = "Hello World #      ";
     //Intellisense doesn't seem to see ITOA, but this does compile
     //itoa(packetnum++, data+13, 10);
-    Serial.print("Sending "); Serial.println(data);
+    //Serial.print("Sending "); Serial.println(data);
     //radiopacket[19] = 0;
     
     Serial.println("Sending...");
     delay(10);
     rf95.send((uint8_t *)data, 50);
 
-    Serial.println("Waiting for packet to complete..."); 
     delay(10);
     rf95.waitPacketSent();
+    Serial.println("Packet Sent!");
     // Now wait for a reply
-    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-    uint8_t len = sizeof(buf);
-
-    Serial.println("Waiting for reply...");
+    //uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+    //uint8_t len = sizeof(buf);
+    /*
     if (rf95.waitAvailableTimeout(1000))
       { 
       // Should be a reply message for us now   
@@ -359,6 +358,7 @@ void send_packet(char *data) {
     {
       Serial.println("No reply, is there a listener around?");
     }
+    */
 
 }
 

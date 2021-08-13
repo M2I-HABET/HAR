@@ -53,10 +53,10 @@ extern Adafruit_FlashTransport_QSPI flashTransport;
 extern Adafruit_SPIFlash Arcada_QSPI_Flash;
 
 // file system object from SdFat
-FatFileSystem fs;
-//Setup LoRa radio
-//RH_RF95 rf95(RFM95_CS, RFM95_INT);
-// RHMesh manager(rf95,CLIENT_ADDRESS);
+FatFileSystem fatfs;
+
+// Configuration for the datalogging file:
+#define FILE_NAME  "FDR.csv"
 
 // Check the timer callback, this function is called every millisecond!
 volatile uint16_t milliseconds = 0;
@@ -75,14 +75,14 @@ unsigned long lastTime2 = 0; //Simple local timer. Limits amount if I2C traffic 
 
 void setup() {
   Serial.begin(115200);
-  delay(50);
+  delay(100);
   Serial.println("--------------------------------------------");
-  delay(5000);
+  //delay(5000);
   Serial.println("High Altitude Reporter OS (HAROS)");
   Serial.println("============================================");
   Serial.println(" HW Rev. 0.1 | FW Rev. 0.3");
   Serial.println("============================================");
-
+  delay(2000);
   init_i2c(DEBUG);
   Serial.println("Setting up WatchDog...");
   int countdownMS = Watchdog.enable(10000);
@@ -135,29 +135,17 @@ void setup() {
     arcada.display->setTextColor(ARCADA_GREEN);
     arcada.display->println("Filesystem OK");
   }
-
-  arcada.display->setTextColor(ARCADA_WHITE);
-  arcada.display->println("Sensors Found: ");
-  // Initialize flash library and check its chip ID.
-  /*
-  if (!Arcada_QSPI_Flash.begin()) {
-    Serial.println("Error, failed to initialize flash chip!");
-    //while(1);
-  }
-  Serial.print("Setting up Filesystem...OK");
-  Serial.println("Flash chip JEDEC ID: 0x"); Serial.println(Arcada_QSPI_Flash.getJEDECID(), HEX);
-
   // First call begin to mount the filesystem.  Check that it returns true
   // to make sure the filesystem was mounted.
-  if (!fs.begin(&Arcada_QSPI_Flash)) {
+  if (!fatfs.begin(&Arcada_QSPI_Flash)) {
     Serial.println("Error, failed to mount newly formatted filesystem!");
     Serial.println("Was the flash chip formatted with the fatfs_format example?");
     while(1);
   }
-  
-  Serial.println("Mounting Filesystem...OK");
-  arcada.display->println("Memory...OK");
-  */
+  Serial.println("Mounted filesystem!");
+
+  arcada.display->setTextColor(ARCADA_WHITE);
+  arcada.display->println("Sensors Found: ");
   init_gps(DEBUG);
   arcada.display->println("GPS...ONLINE");
   init_bmp280(DEBUG);
@@ -197,38 +185,43 @@ void loop() {
     // Serial.println("In the 1 sec function");
     lastTime = millis(); //Update the timer
 
-  // Open the datalogging file for writing.  The FILE_WRITE mode will open
-  // the file for appending, i.e. it will add new data to the end of the file.
+    // Grab the data
+    envrion_data ev = read_environ();
+    gps_data gps = read_gps();
 
-  /*
-  File dataFile = fatfs.open(FILE_NAME, FILE_WRITE);
+    // Open the datalogging file for writing.  The FILE_WRITE mode will open
+    // the file for appending, i.e. it will add new data to the end of the file.
+    File dataFile = fatfs.open(FILE_NAME, FILE_WRITE);
   
-  // Check that the file opened successfully and write a line to it.
-  if (dataFile) {
-    dataFile.print(temp,2);
-    dataFile.print(",");
-    dataFile.print(pres, 2);
-    dataFile.print(",");
-    dataFile.print(humidity, 2);
-    dataFile.print(",");
-    dataFile.println();
-    // Finally close the file when done writing.  This is smart to do to make
-    // sure all the data is written to the file.
-    dataFile.close();
-    
-    Serial.println("Wrote new measurement to data file!");
-  }
+    // Check that the file opened successfully and write a line to it.
+    if (dataFile) {
+      dataFile.print("$HAR,");
+      dataFile.print(gps.GPSLat);
+      dataFile.print(",");
+      dataFile.print(gps.GPSLon);
+      dataFile.print(",");
+      dataFile.print(gps.GPSAlt);
+      dataFile.print(",");
+      dataFile.print(ev.temp,2);
+      dataFile.print(",");
+      dataFile.print(ev.pres, 2);
+      dataFile.print(",");
+      dataFile.print(ev.humidity, 2);
+      dataFile.print(",");
+      dataFile.println("#");
+      // Finally close the file when done writing.  This is smart to do to make
+      // sure all the data is written to the file.
+      dataFile.close();
+      
+      Serial.println("Wrote new measurement to data file!");
+    }
   else {
     Serial.println("Failed to open data file for writing!");
   }
-*/
+
   /*
    * Update the Arcada Display
    */
-
-    envrion_data ev = read_environ();
-
-    gps_data gps = read_gps();
 
     arcada.display->fillScreen(ARCADA_BLACK);
     arcada.display->setTextColor(ARCADA_WHITE, ARCADA_BLACK);
