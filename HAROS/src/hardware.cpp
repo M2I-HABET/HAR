@@ -153,22 +153,50 @@ void init_lora(bool debug) {
 */
 void init_gps(bool debug) {
 
-    if (GNSS.begin() == false)
+  if (GNSS.begin() == false)
+  {
+    Serial.println("FAILED");
+    Serial.println(F("u-blox GNSS not detected at default I2C address. Please check wiring. Freezing."));
+    while (1);
+  }
+  else
+  {
+    GNSS.setI2COutput(COM_TYPE_UBX); //Set the I2C port to output UBX only (turn off NMEA noise)
+    GNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
+    // If we are going to change the dynamic platform model, let's do it here.
+    // Possible values are:
+    // PORTABLE, STATIONARY, PEDESTRIAN, AUTOMOTIVE, SEA, AIRBORNE1g, AIRBORNE2g, AIRBORNE4g, WRIST, BIKE
+    // For High Altitude Balloon applications, we need this set to AIRBORNE, either 1g or 2g should be fine.
+
+    if (GNSS.setDynamicModel(DYN_MODEL_AIRBORNE1g) == false) // Set the dynamic model to PORTABLE
     {
-        Serial.println("FAILED");
-        Serial.println(F("u-blox GNSS not detected at default I2C address. Please check wiring. Freezing."));
-        
-        while (1);
+      Serial.println(F("*** Warning: setDynamicModel failed ***"));
     }
-    else{
-        GNSS.setI2COutput(COM_TYPE_UBX); //Set the I2C port to output UBX only (turn off NMEA noise)
-        GNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
-        if (debug) {
-            Serial.println("Initializing GPS Sensor....OK");
-            Serial.println("Setting GPS to UBX Mode....OK");
-            Serial.println("Saving config to GPS Module....OK");
-        }
+    else
+    {
+      Serial.println(F("Dynamic platform model changed successfully!"));
     }
+    // Let's read the new dynamic model to see if it worked
+    uint8_t newDynamicModel = GNSS.getDynamicModel();
+    if (newDynamicModel == DYN_MODEL_UNKNOWN)
+    {
+      Serial.println(F("*** Warning: getDynamicModel failed ***"));
+    }
+    else
+    {
+      Serial.print(F("The new dynamic model is: "));
+      Serial.println(newDynamicModel);
+    }
+
+    //myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_NAVCONF); //Uncomment this line to save only the NAV settings to flash and BBR
+    GNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
+    Serial.println("OK");
+    if (debug) {
+      Serial.println("Initializing GPS Sensor....OK");
+      Serial.println("Setting GPS to Aircraft Mode....OK");
+      Serial.println("Saving config to GPS Module....OK");
+    }
+  }
 }
 
 /*!

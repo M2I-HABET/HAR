@@ -29,6 +29,7 @@ Hardware hookup is via QWICC Connector
 
 #include <Adafruit_Arcada.h>
 #include <Adafruit_SPIFlash.h>
+#include <Adafruit_SleepyDog.h>
 //#include <Wire.h> //Needed for I2C to GNSS GPS
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
@@ -83,6 +84,16 @@ void setup() {
   Serial.println("============================================");
 
   init_i2c(DEBUG);
+  Serial.println("Setting up WatchDog...");
+  int countdownMS = Watchdog.enable(10000);
+  Serial.print("Enabled the watchdog with max countdown of ");
+  Serial.print(countdownMS, DEC);
+  Serial.println(" milliseconds!");
+  Serial.println();
+  #ifndef NRF52_SERIES // cannot disable nRF's WDT
+    // Disable the watchdog entirely by calling Watchdog.disable();
+    Watchdog.disable();
+  #endif 
   pinMode(WHITE_LED, OUTPUT);
   digitalWrite(WHITE_LED, LOW);
   if (!arcada.arcadaBegin()) {
@@ -302,7 +313,8 @@ void loop() {
     envrion_data ev = read_environ();
 
     gps_data gps = read_gps();
-
+    arcada.pixels.setPixelColor(0,0,255,0);
+    arcada.pixels.show();
     char buf[100] = {0};
     char pos[100] = {0};
     strcpy(pos,"$HAR,");
@@ -327,7 +339,10 @@ void loop() {
     send_packet(pos);
     memset(buf,0,100);
     memset(pos,0,100);
-
+    arcada.pixels.setPixelColor(0,0,0,0);
+    arcada.pixels.show();
+    //Reset the Watchdog
+    Watchdog.reset();
     
   }
 }
