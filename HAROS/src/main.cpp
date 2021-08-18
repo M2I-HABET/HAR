@@ -328,6 +328,7 @@ void loop() {
     strcat(pos,",");
     sprintf(buf,"%.02f",ev.pres);
     strcat(pos,buf);
+    strcat(pos,",#");
     Serial.println(pos);
     send_packet(pos);
     memset(buf,0,100);

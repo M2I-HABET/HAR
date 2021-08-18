@@ -327,10 +327,11 @@ void send_packet(char *data) {
     //itoa(packetnum++, data+13, 10);
     //Serial.print("Sending "); Serial.println(data);
     //radiopacket[19] = 0;
+    size_t n = sizeof(data) / sizeof(data[0]);
     
     Serial.println("Sending...");
     delay(10);
-    rf95.send((uint8_t *)data, 50);
+    rf95.send((uint8_t *)data, 52);
 
     delay(10);
     rf95.waitPacketSent();
