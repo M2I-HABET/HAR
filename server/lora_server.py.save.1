@@ -46,29 +46,23 @@ print("LoRa Started")
 logging.info("LoRa Started")
 
 # Configure UDP port for information streaming
-ip = "192.168.1.206"
+ip = "192.168.1.205"
 port = 4440
-
-connection = False
 # Create socket for server
-while not connection: 
-    try: 
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        # print("Do Ctrl+c to exit the program !!")
-        s.connect((ip,port))
-        print("Connection to server completed")
-        logging.info("Connection to server completed")
-        connection = True
-    except Exception as e :
-        logging.error("Could not initialize the server")
-        logging.error(e)
-        print("Could not initialize the server")
-        print(e)
-        s.close()
-        time.sleep(1)
-        # exit()
+try: 
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    # print("Do Ctrl+c to exit the program !!")
+    s.connect((ip,port))
+except Exception as e :
+    logging.error("Could not initialize the server")
+    logging.error(e)
+    print("Could not initialize the server")
+    print(e)
+    s.close()
+    exit()
 
-
+print("Connection to server completed")
+logging.info("Connection to server completed")
 
 # Open file to save GPS log data for testing and data saving purposes
 f = open('datalog.txt', 'a')
@@ -100,7 +94,7 @@ while True:
             print(packet_text)
             # try to send the data to the penthouse machine
             try :
-               # send_packet = packet_text + "," + str(bytes(rfm9x.rssi+256))
+cd                # send_packet = packet_text + "," + str(bytes(rfm9x.rssi+256))
                 s.send(prev_packet) # we do not need to encode this into utf since it should already be encoded that way 
                 rec_data = s.recv(4096)
                 print("Data recieved: ", rec_data.decode('utf-8'))
