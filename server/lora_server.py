@@ -48,21 +48,27 @@ logging.info("LoRa Started")
 # Configure UDP port for information streaming
 ip = "192.168.1.205"
 port = 4440
-# Create socket for server
-try: 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    # print("Do Ctrl+c to exit the program !!")
-    s.connect((ip,port))
-except Exception as e :
-    logging.error("Could not initialize the server")
-    logging.error(e)
-    print("Could not initialize the server")
-    print(e)
-    s.close()
-    exit()
 
-print("Connection to server completed")
-logging.info("Connection to server completed")
+connection = False
+# Create socket for server
+while not connection: 
+    try: 
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        # print("Do Ctrl+c to exit the program !!")
+        s.connect((ip,port))
+        print("Connection to server completed")
+        logging.info("Connection to server completed")
+        connection = True
+    except Exception as e :
+        logging.error("Could not initialize the server")
+        logging.error(e)
+        print("Could not initialize the server")
+        print(e)
+        s.close()
+        time.sleep(1)
+        # exit()
+
+
 
 # Open file to save GPS log data for testing and data saving purposes
 f = open('datalog.txt', 'a')
