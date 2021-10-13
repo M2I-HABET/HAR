@@ -46,7 +46,7 @@ print("LoRa Started")
 logging.info("LoRa Started")
 
 # Configure UDP port for information streaming
-ip = "192.168.1.206"
+ip = "192.168.1.205"
 port = 4440
 # Create socket for server
 try: 
@@ -94,7 +94,7 @@ while True:
             print(packet_text)
             # try to send the data to the penthouse machine
             try :
-               # send_packet = packet_text + "," + str(bytes(rfm9x.rssi+256))
+cd                # send_packet = packet_text + "," + str(bytes(rfm9x.rssi+256))
                 s.send(prev_packet) # we do not need to encode this into utf since it should already be encoded that way 
                 rec_data = s.recv(4096)
                 print("Data recieved: ", rec_data.decode('utf-8'))
