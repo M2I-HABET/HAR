@@ -35,7 +35,7 @@ Hardware hookup is via QWICC Connector
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include <Adafruit_Sensor.h>
 
-//#include <RH_RF95.h>
+#include <RH_RF95.h>
 
 #include <time.h>
 #include "hardware.h"
