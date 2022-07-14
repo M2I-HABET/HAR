@@ -327,7 +327,7 @@ void send_packet(char *data) {
     //itoa(packetnum++, data+13, 10);
     //Serial.print("Sending "); Serial.println(data);
     //radiopacket[19] = 0;
-    size_t n = sizeof(data) / sizeof(data[0]);
+    // size_t n = sizeof(data) / sizeof(data[0]);
     
     Serial.println("Sending...");
     delay(10);
@@ -367,5 +367,6 @@ void send_packet(char *data) {
 @TODO move receive part into this function, use interrrupts
 */
 char rx_packet(void) {
+  
 
 }
