@@ -35,7 +35,7 @@ Hardware hookup is via QWICC Connector
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include <Adafruit_Sensor.h>
 
-//#include <RH_RF95.h>
+#include <RH_RF95.h>
 
 #include <time.h>
 #include "hardware.h"
@@ -56,7 +56,7 @@ extern Adafruit_SPIFlash Arcada_QSPI_Flash;
 FatFileSystem fatfs;
 
 // Configuration for the datalogging file:
-#define FILE_NAME  "FDR.csv"
+#define FILE_NAME  "HAR_FDR.csv"
 
 // Check the timer callback, this function is called every millisecond!
 volatile uint16_t milliseconds = 0;
@@ -80,7 +80,7 @@ void setup() {
   //delay(5000);
   Serial.println("High Altitude Reporter OS (HAROS)");
   Serial.println("============================================");
-  Serial.println(" HW Rev. 0.1 | FW Rev. 0.3");
+  Serial.println(" HW Rev. 1.0 | FW Rev. 1.2");
   Serial.println("============================================");
   delay(2000);
   init_i2c(DEBUG);
@@ -111,7 +111,7 @@ void setup() {
   arcada.display->setTextSize(2);
   arcada.display->setTextColor(ARCADA_GREEN);
   arcada.display->println("HAROS Booting up...");
-  arcada.display->println("FW Rev: 0.3");
+  arcada.display->println("FW Rev: 1.2");
   /********** Check QSPI manually */
   if (!Arcada_QSPI_Flash.begin()){
     Serial.println("Could not find flash on QSPI bus!");
