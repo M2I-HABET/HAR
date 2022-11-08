@@ -19,7 +19,6 @@
   (fp_rect (start -35.56 -12.7) (end 35.56 12.7) (layer "F.SilkS") (width 0.12) (fill none) (tstamp a7abb4ca-3bf5-4b5b-a438-092621579d98))
   (fp_line (start 28.46 12.39) (end 28.46 8.79) (layer "F.CrtYd") (width 0.05) (tstamp 1590ac18-2f36-421c-b529-733e9704e757))
   (fp_line (start -28.49 8.79) (end -28.49 12.39) (layer "F.CrtYd") (width 0.05) (tstamp 21e41017-f8da-4b51-b64f-25a081500dbc))
-  (fp_line (start -28.475 12.7) (end 28.475 12.7) (layer "F.CrtYd") (width 0.05) (tstamp 313de706-1058-4e18-91e3-11bb325e3d6c))
   (fp_line (start 28.46 8.79) (end -28.49 8.79) (layer "F.CrtYd") (width 0.05) (tstamp 64e5ef45-ae28-4fdb-920f-d86ca2a86fba))
   (fp_line (start -28.49 12.39) (end 28.46 12.39) (layer "F.CrtYd") (width 0.05) (tstamp e38f4a91-d29b-4c4b-b527-e0cf9992a841))
   (fp_line (start 27.92 9.32) (end 27.92 11.86) (layer "F.Fab") (width 0.1) (tstamp 19be7c31-df40-4cf3-8600-05fbb826c657))
@@ -49,8 +48,13 @@
   (pad "20" thru_hole oval (at 21.57 10.59 90) (size 1.7 1.7) (drill 1) (layers *.Mask "F.Cu" "In1.Cu" "B.Cu") (tstamp 473dee95-37b6-4a90-8d47-06f48c49fa80))
   (pad "21" thru_hole oval (at 24.11 10.59 90) (size 1.7 1.7) (drill 1) (layers *.Mask "F.Cu" "In1.Cu" "B.Cu") (tstamp 52522204-b171-47fb-9e7e-a55c12b96e2c))
   (pad "22" thru_hole oval (at 26.65 10.59 90) (size 1.7 1.7) (drill 1) (layers *.Mask "F.Cu" "In1.Cu" "B.Cu") (tstamp f06ad59a-7ad2-45a5-83a3-4fcb105d7047))
-  (model "/Users/mnelson/Documents/GitHub/Adafruit_CAD_Parts/4500 CLUE nRF52840/4500 CLUE nRF52840.step"
-    (offset (xyz 0 0 5))
+  (model "${KIPRJMOD}/3D_parts/4500 CLUE nRF52840.step"
+    (offset (xyz 1.5 0 4))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 90 0 0))
+  )
+  (model "${KIPRJMOD}/3D_parts/4UCON_17809_02x40x1.27mm_Vertical.step"
+    (offset (xyz -23 -5 0))
     (scale (xyz 1 1 1))
     (rotate (xyz 90 0 0))
   )
