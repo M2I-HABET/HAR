@@ -49,4 +49,9 @@
   (pad "20" thru_hole oval (at 21.57 10.59 90) (size 1.7 1.7) (drill 1) (layers *.Mask "F.Cu" "In1.Cu" "B.Cu") (tstamp 473dee95-37b6-4a90-8d47-06f48c49fa80))
   (pad "21" thru_hole oval (at 24.11 10.59 90) (size 1.7 1.7) (drill 1) (layers *.Mask "F.Cu" "In1.Cu" "B.Cu") (tstamp 52522204-b171-47fb-9e7e-a55c12b96e2c))
   (pad "22" thru_hole oval (at 26.65 10.59 90) (size 1.7 1.7) (drill 1) (layers *.Mask "F.Cu" "In1.Cu" "B.Cu") (tstamp f06ad59a-7ad2-45a5-83a3-4fcb105d7047))
+  (model "/Users/mnelson/Documents/GitHub/Adafruit_CAD_Parts/4500 CLUE nRF52840/4500 CLUE nRF52840.step"
+    (offset (xyz 0 0 5))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 90 0 0))
+  )
 )

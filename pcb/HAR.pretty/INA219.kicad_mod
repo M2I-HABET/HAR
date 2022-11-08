@@ -23,4 +23,9 @@
   (pad "6" thru_hole circle (at 1.63 8.59) (size 1.524 1.524) (drill 0.762) (layers *.Cu *.Mask) (tstamp bee930f2-8140-40ba-b272-91fe40001450))
   (pad "7" thru_hole circle (at 3.76 8.53) (size 1.524 1.524) (drill 0.762) (layers *.Cu *.Mask) (tstamp 964cf779-d04c-492b-b3d3-45ed03020897))
   (pad "8" thru_hole circle (at 6.03 8.59) (size 1.524 1.524) (drill 0.762) (layers *.Cu *.Mask) (tstamp 8e1485c5-416d-44ea-a84d-ffa7ea5d78c3))
+  (model "/Users/mnelson/Documents/GitHub/Adafruit_CAD_Parts/904 INA219 Stemma/904 INA219 Stemma.step"
+    (offset (xyz -12.5 -11 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )
