@@ -56,7 +56,7 @@ extern Adafruit_SPIFlash Arcada_QSPI_Flash;
 FatFileSystem fatfs;
 
 // Configuration for the datalogging file:
-#define FILE_NAME  "HAR_FDR.csv"
+//#define FILE_NAME  "HAR_FDR.csv"
 
 // Check the timer callback, this function is called every millisecond!
 volatile uint16_t milliseconds = 0;
@@ -297,7 +297,7 @@ void loop() {
   @brief    1 sec interval
   @details  Take the data collected and transmit via LoRa radio
             Data is sent as:
-            BERT,Lat,Lon,Altitude,FixType,Temp,Pressure,Humidity,SatQuality
+            HAR,Lat,Lon,Altitude,FixType,Temp,Pressure,Humidity,SatQuality
   @return   void
 */
 
