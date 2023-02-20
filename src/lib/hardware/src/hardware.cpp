@@ -51,6 +51,7 @@
 #include <Adafruit_LSM6DS33.h>
 #include <Adafruit_LIS3MDL.h>
 #include <Adafruit_SHT31.h>
+#include <Adafruit_INA219.h>
 //#include <Adafruit_APDS9960.h>
 #include <Adafruit_BMP280.h>
 #include <RH_RF95.h>
@@ -59,6 +60,8 @@
 #include "hardware.h"
 
 // Instantiates functions for hardware
+
+Adafruit_INA219 ina219;
 
 Adafruit_LSM6DS33 lsm;
 Adafruit_LIS3MDL lis;
@@ -77,8 +80,6 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 * Latitude, Longitude, Altitude, MSL Altitude,
 * SIV, Data/Time, Fix Type and RTK value.
 */
-
-
 
 /*!
   @brief     Initialize I2C Bus
@@ -270,6 +271,28 @@ void init_bmp280 (bool debug) {
 }
 
 /*!
+  @brief     Initialize INA219 Power Sensor
+  @details   Initialize the INA219 voltage and current sensor.
+             This module is to monitor and report back voltage, current
+             and calculate power onboard the spacecraft.
+             By default the initialization will use the largest range (32V, 2A). However
+             you can call a setCalibration function to change this range.
+             To use a slightly lower 32V, 1A range (higher precision on amps):
+             ina219.setCalibration_32V_1A();
+             Or to use a lower 16V, 400mA range (higher precision on volts and amps):
+             ina219.setCalibration_16V_400mA();
+  @param[in] debug    If true, output to the serial port
+  @return
+*/
+
+void init_ina219(bool debug){
+    if (! ina219.begin()) {
+        Serial.println("Failed to find INA219 chip");
+    while (1) { delay(10); }
+    }
+}
+
+/*!
   @brief     Read data from GPS sensor
   @details   Read data from the Sparkfun GPS sensor.
              Currently this is setup to read Latitude,
@@ -314,6 +337,16 @@ environ_data read_environ(void) {
     env.pres = bmp280.readPressure()/100;
 
     return env;
+}
+
+power_data read_power(void){
+
+    power_data power;
+    power.voltage = ina219.getBusVoltage_V();
+    power.current = ina219.getCurrent_mA();
+    power.power = ina219.getPower_mW();
+
+    return power;
 }
 
 void send_packet(char *data) {

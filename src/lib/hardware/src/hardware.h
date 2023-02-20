@@ -57,6 +57,12 @@ struct environ_data {
     float humidity;
 };
 
+struct power_data {
+    float voltage;
+    float current;
+    float power;
+};
+
 // uint32_t buttons, last_buttons;
 
 /* Functions declarations
@@ -77,9 +83,13 @@ struct environ_data {
 
  void init_bmp280 (bool debug);
 
+ void init_INA219(bool debug);
+
  gps_data read_gps(void);
 
  environ_data read_environ(void);
+
+power_data read_power(void);
 
  void send_packet(char *data);
 

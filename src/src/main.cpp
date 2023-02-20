@@ -1,7 +1,8 @@
 /*!
  * High Altitude Reporter (HAR)
- * HW Version - 0.1
- * FW Version - 0.3
+ * HW Gen - 3
+ * HW Version - 1.0
+ * FW Version - 1.3
  * Matthew E. Nelson
  */
 
@@ -80,7 +81,7 @@ void setup() {
   //delay(5000);
   Serial.println("High Altitude Reporter OS (HAROS)");
   Serial.println("============================================");
-  Serial.println(" HW Rev. 1.0 | FW Rev. 1.2");
+  Serial.println(" Gen3R1 | FW Rev. 1.3");
   Serial.println("============================================");
   delay(2000);
   init_i2c(DEBUG);
@@ -111,7 +112,7 @@ void setup() {
   arcada.display->setTextSize(2);
   arcada.display->setTextColor(ARCADA_GREEN);
   arcada.display->println("HAROS Booting up...");
-  arcada.display->println("FW Rev: 1.2");
+  arcada.display->println("Gen3.1.1.3");
   /********** Check QSPI manually */
   if (!Arcada_QSPI_Flash.begin()){
     Serial.println("Could not find flash on QSPI bus!");
@@ -188,6 +189,7 @@ void loop() {
     // Grab the data
     envrion_data ev = read_environ();
     gps_data gps = read_gps();
+    power_data pwr = read_power();
 
     // Open the datalogging file for writing.  The FILE_WRITE mode will open
     // the file for appending, i.e. it will add new data to the end of the file.
@@ -201,6 +203,12 @@ void loop() {
       dataFile.print(gps.GPSLon);
       dataFile.print(",");
       dataFile.print(gps.GPSAlt);
+      dataFile.print(",");
+      dataFile.print(pwr.voltage,2);
+      dataFile.print(",");
+      dataFile.print(pwr.current,2);
+      dataFile.print(",");
+      dataFile.print(pwr.power,2);
       dataFile.print(",");
       dataFile.print(ev.temp,2);
       dataFile.print(",");
@@ -289,6 +297,12 @@ void loop() {
     Serial.print(ev.pres);
     Serial.print(",");
     Serial.println(ev.humidity);
+    Serial.print(",");
+    Serial.println(pwr.voltage);
+    Serial.print(",");
+    Serial.println(pwr.current);
+    Serial.print(",");
+    Serial.println(pwr.power);
     //@TODO Add checksum
   
  }
