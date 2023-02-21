@@ -446,12 +446,12 @@
   },
   "pcbnew": {
     "last_paths": {
-      "gencad": "",
-      "idf": "",
+      "gencad": "CluePCB.cad",
+      "idf": "CluePCB.emn",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
-      "vrml": ""
+      "step": "CluePCB.step",
+      "vrml": "CluePCB.wrl"
     },
     "page_layout_descr_file": ""
   },
