@@ -1,9 +1,17 @@
 /*
    HAR v5.0 (MicroMod)
 
+   Main program to be run on version 5.0 of HABET's High Altitude Reporter (HAR).
+   Handles intake of GPS and sensor data and outputs over 915 MHz LoRa module to
+   ground station. Requires MicroMod GNSS Function Board, 1W LoRa MicroMod Function
+   Board, and a MicroMod ESP32 Processor. Future updates will include data storage on
+   onboard microSD card and use of ESP32's built-in WiFi transceiver to communicate with
+   other onboard devices.
+
    Created by Nick Goeckner and Brandon Beavers
    M2I HABET
-   Date: July 2023
+   Date Created: July 13, 2023
+   Last Updated: July 18, 2023
 */
 #include <Arduino.h>
 #include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
@@ -50,18 +58,25 @@ int pin_dio1 =      G2;
   
 SX1276 radio = new Module(pin_cs, pin_dio0, pin_nrst, pin_dio1);
 
-//Initializes radio, serial, GPS, and I2C bus:
+// Initializes radio, serial, GPS, and I2C bus:
 void setup() {
-  //I2C:
+  // I2C:
   Wire.begin();
-  //Serial:
+  // Serial:
   Serial.begin(115200);
-  //GPS:
+  // GPS:
+  Serial.print(F("[NEO-M9N] Initializing..."));
   GNSS.begin();
-  GNSS.setI2COutput(COM_TYPE_UBX); //Outputting UBX only, no NMEA
-  GNSS.setDynamicModel(DYN_MODEL_AIRBORNE1g); //Sets dynamic model to AIRBORNE1g. Other options: PORTABLE, STATIONARY, PEDESTRIAN, AUTOMOTIVE, SEA, AIRBORNE2g, AIRBORNE4g, WRIST, BIKE
-  delay(500);
-  //Radio: 
+  if (GNSS.begin() = false) {
+    Serial.println(F("failed!");)
+    while(true);
+  } else {
+    GNSS.setI2COutput(COM_TYPE_UBX); // Outputting UBX (U-blox binary protocol) only, no NMEA (National Marine Electronics Association)
+    GNSS.setDynamicModel(DYN_MODEL_AIRBORNE1g); // Sets dynamic model to AIRBORNE1g. Other options: PORTABLE, STATIONARY, PEDESTRIAN, AUTOMOTIVE, SEA, AIRBORNE2g, AIRBORNE4g, WRIST, BIKE
+    Serial.println(F("init success!"));
+    delay(500);
+  }
+  // Radio: 
   Serial.print(F("[SX1276] Initializing ... "));
   int state = radio.begin(915.0); //-23dBm
   if (state == RADIOLIB_ERR_NONE) {
@@ -72,33 +87,26 @@ void setup() {
     while (true);
   }
 
-  
-
-  // set output power to 10 dBm (accepted range is -3 - 17 dBm)
-  // NOTE: 20 dBm value allows high power operation, but transmission
-  //       duty cycle MUST NOT exceed 1%
-  //  if (radio.setOutputPower(20) == ERR_INVALID_OUTPUT_POWER) {
-  //    Serial.println(F("Selected output power is invalid for this module!"));
-  //    while (true);
-  //  }
   radio.setRfSwitchPins(pin_rx_enable, pin_tx_enable);
 }
-
+// initialize data variables here:
+// GPS:
 long GPSLat = 0;
 long GPSLon = 0;
 long GPSAlt = 0;
+// Sensor:
 
 void loop() {
-  GPSLat = GNSS.getLatitude(); //Divide Lat/Lon by 1000000 to get coords.
+  GPSLat = GNSS.getLatitude(); // divide Lat/Lon by 1000000 to get coords
   GPSLon = GNSS.getLongitude();
-  GPSAlt = GNSS.getAltitude(); //Measures in mm. Divide by 1000 for alt in m.
+  GPSAlt = GNSS.getAltitude(); // measures in mm. Divide by 1000 for alt in m
   Serial.print(F("[SX1276] Transmitting packet ... "));
 
   // you can transmit C-string or Arduino string up to
   // 256 characters long
 
   char output[100];
-  sprintf(output, "$HAR: %d, %d, %d", GPSLat, GPSLon, GPSAlt);
+  sprintf(output, "$HAR, %d, %d, %d", GPSLat, GPSLon, GPSAlt);
 
   int state = radio.transmit(output);
 
@@ -110,12 +118,12 @@ void loop() {
     Serial.print(F("[SX1276] Datarate:\t"));
     Serial.print(radio.getDataRate());
     Serial.println(F(" bps"));
-    //print GPS data to serial(for debugging)
-    Serial.print(F("[SX1276] Latitude:\t"));
+    // print GPS data to serial (for debugging)
+    Serial.print(F("[NEO-M9N] Latitude:\t"));
     Serial.println(GNSS.getLatitude());
-    Serial.print(F("[SX1276] Longitude:\t"));
+    Serial.print(F("[NEO-M9N] Longitude:\t"));
     Serial.println(GNSS.getLongitude());
-    Serial.print(F("[SX1276] Altitude:\t"));
+    Serial.print(F("[NEO-M9N] Altitude:\t"));
     Serial.println(GNSS.getAltitude());
   } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
     // the supplied packet was longer than 256 bytes
