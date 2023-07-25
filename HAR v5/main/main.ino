@@ -16,7 +16,7 @@
    Created by Nick Goeckner and Brandon Beavers
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: July 18, 2023
+   Last Updated: July 25, 2023
 */
 #include <Arduino.h>
 #include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
@@ -146,7 +146,7 @@ void loop() {
     Serial.print(F("[NEO-M9N] Altitude:\t"));
     Serial.println(GNSS.getAltitude());
     // print battery voltage
-    
+
     // print sensor data to serial
 
     Serial.print(F("[SX1276] Transmitting packet ... "));
