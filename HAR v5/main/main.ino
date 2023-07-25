@@ -43,7 +43,7 @@
 #endif
 
 SFE_UBLOX_GNSS GNSS;//
-//BME680_Class bme680;
+BME680_Class BME680;
 ICM_20948_I2C icm20948;
 // SX1276 pin connections:
 //       | SLOT 0 | SLOT 1 |
@@ -92,10 +92,19 @@ void setup() {
     while (true);
   }
   // BME-680:
-  //if (bme680.begin(I2C_STANDARD_MODE) == false){
-    //Serial.println("The sensor did not respond. Please check wiring.");
-    //while(1); //Freeze
-  //}
+  while (!BME680.begin(I2C_STANDARD_MODE)) {  // Start BME680 using I2C, use first device found
+    Serial.print(F("-  Unable to find BME680. Trying again in 5 seconds.\n"));
+    delay(5000);
+  }  // of loop until device is located
+  Serial.print(F("- Setting 16x oversampling for all sensors\n"));
+  BME680.setOversampling(TemperatureSensor, Oversample16);  // Use enumerated type values
+  BME680.setOversampling(HumiditySensor, Oversample16);     // Use enumerated type values
+  BME680.setOversampling(PressureSensor, Oversample16);     // Use enumerated type values
+  Serial.print(F("- Setting IIR filter to a value of 4 samples\n"));
+  BME680.setIIRFilter(IIR4);  // Use enumerated type values
+  Serial.print(F("- Setting gas measurement to 320\xC2\xB0\x43 for 150ms\n"));  // "�C" symbols
+  BME680.setGas(320, 150);  // 320�c for 150 milliseconds
+
   radio.setRfSwitchPins(pin_rx_enable, pin_tx_enable);
   delay(100);
 }
@@ -105,10 +114,10 @@ long GPSLat = 0;
 long GPSLon = 0;
 long GPSAlt = 0;
 // BME 680:
-//int temp = 0;
-//int pressure = 0;
-//int humidity = 0;
-//int gas = 0;
+int temp = 0;
+int pressure = 0;
+int humidity = 0;
+int gas = 0;
 // Battery Voltage:
 //float sensorRead = 0.0;
 
@@ -116,7 +125,7 @@ void loop() {
   GPSLat = GNSS.getLatitude(); // divide Lat/Lon by 1000000 to get coords
   GPSLon = GNSS.getLongitude();
   GPSAlt = GNSS.getAltitude(); // measures in mm. Divide by 1000 for alt in m
-  //bme680.getSensorData(temp, humidity, pressure, gas);
+  BME680.getSensorData(temp, humidity, pressure, gas);
   //sensorRead = (analogRead(4) * 3 / 4095 * 3.3 * 1.1);
   //int vint = sensorRead;
   //float vfrac = sensorRead - vint;
@@ -126,7 +135,7 @@ void loop() {
   // 256 characters long
 
   char output[256];
-  sprintf(output, "$HAR, %d, %d, %d", GPSLat, GPSLon, GPSAlt);
+  sprintf(output, "$HAR, %d, %d, %d, %d, %d, %d", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity);
   Serial.println(output);
   int state = radio.transmit(output);
 
