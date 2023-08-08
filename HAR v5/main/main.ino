@@ -119,6 +119,7 @@ int pressure = 0;
 int humidity = 0;
 int gas = 0;
 // Battery Voltage:
+//analogReadResolution(12);
 //float sensorRead = 0.0;
 
 void loop() {
