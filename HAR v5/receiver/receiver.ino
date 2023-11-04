@@ -115,7 +115,7 @@ void loop() {
 
   } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
     // timeout occurred while waiting for a packet
-    //Serial.println(F("timeout!"));
+    Serial.println(F("timeout!"));
 
   } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
     // packet was received, but is malformed

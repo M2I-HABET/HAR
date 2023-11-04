@@ -3,10 +3,9 @@
 
    Main program to be run on version 5.0 of HABET's High Altitude Reporter (HAR).
    Handles intake of GPS and sensor data and outputs over 915 MHz LoRa module to
-   ground station. Requires MicroMod GNSS Function Board (Function One), 1W LoRa MicroMod Function
-   Board (Function Zero), and a MicroMod ESP32 Processor. Future updates will include data storage on
-   onboard microSD card and use of ESP32's built-in WiFi transceiver to communicate with
-   other onboard devices.
+   ground station, as well as storing to onboard SD card. Requires MicroMod GNSS Function Board (Function One), 
+   1W LoRa MicroMod Function Board (Function Zero), and a MicroMod ESP32 Processor. Future updates will 
+   include use of ESP32's built-in WiFi transceiver to communicate with other onboard devices.
 
    *IMPORTANT NOTE*: Do not plug in the GNSS Function Board on the Function One slot until the board is
    programmed. The ESP32 will not be able to talk to its attached flash chip which will result in a fatal
@@ -16,15 +15,16 @@
    Created by Nick Goeckner and Brandon Beavers
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: October 4, 2023
+   Last Updated: November 4, 2023
 */
 #include <Arduino.h>
 #include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> // Library found here: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library 
 #include <Zanshin_BME680.h>
-#include <SparkFun_SDP3x_Arduino_Library.h> // Click here to get the library: http://librarymanager/All#SparkFun_SDP3x
-#include <ICM_20948.h>
 #include <Wire.h>
+#include "FS.h" //These three libraries are required for saving to an SD card.
+#include "SD.h"
+#include "SPI.h"
 
 // Redefine CS Pin Name
 // SPI_CS0:     ESP32
@@ -45,8 +45,6 @@
 
 SFE_UBLOX_GNSS GNSS;//
 BME680_Class BME680;
-ICM_20948_I2C icm20948;
-SDP3X SDP31;
 // SX1276 pin connections:
 //       | SLOT 0 | SLOT 1 |
 //==========================
@@ -76,15 +74,37 @@ void setup() {
   Wire.begin();
   // GPS:
   Serial.print(F("[NEO-M9N] Initializing..."));
-  GNSS.begin();
+  if (GNSS.begin() == false){
+    Serial.println(F("u-blox GNSS not detected. Freezing."));
+    while (1);  
+  }
   GNSS.setI2COutput(COM_TYPE_UBX); // Outputting UBX (U-blox binary protocol) only, no NMEA (National Marine Electronics Association)
   GNSS.setDynamicModel(DYN_MODEL_AIRBORNE2g); // Sets dynamic model to AIRBORNE2g. Other options: PORTABLE, STATIONARY, PEDESTRIAN, AUTOMOTIVE, SEA, AIRBORNE1g, AIRBORNE4g, WRIST, BIKE
   Serial.println(F("init success!"));
   delay(500);
-  // ICM-20948:
-  icm20948.begin(Wire,1);
-  // SPD31 (Differential Pressure Sensor):
-  SDP31.begin();
+  //SD Card Initialization:
+  if(!SD.begin()){
+    Serial.println("Card Mount Failed");
+    return;
+  }
+  uint8_t cardType = SD.cardType();
+  if(cardType == CARD_NONE){
+    Serial.println("No SD card attached");
+    return;
+  }
+  Serial.print("SD Card Type: ");
+  if(cardType == CARD_MMC){
+    Serial.println("MMC");
+  } else if(cardType == CARD_SD){
+    Serial.println("SDSC");
+  } else if(cardType == CARD_SDHC){
+    Serial.println("SDHC");
+  } else {
+    Serial.println("UNKNOWN");
+  }
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  Serial.printf("SD Card Size: %lluMB\n", cardSize);
+  Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
   // Radio: 
   Serial.print(F("[SX1276] Initializing ... "));
   int state = radio.begin(915.0); //-23dBm
@@ -100,7 +120,7 @@ void setup() {
   while (!BME680.begin(I2C_STANDARD_MODE)) {  // Start BME680 using I2C, use first device found
     Serial.print(F("-  Unable to find BME680. Trying again in 5 seconds.\n"));
     delay(5000);
-  }  // of loop until device is located
+  }
   Serial.print(F("- Setting 16x oversampling for all sensors\n"));
   BME680.setOversampling(TemperatureSensor, Oversample16);  // Use enumerated type values
   BME680.setOversampling(HumiditySensor, Oversample16);     // Use enumerated type values
@@ -113,6 +133,38 @@ void setup() {
   radio.setRfSwitchPins(pin_rx_enable, pin_tx_enable);
   delay(100);
 }
+// Creates function to write data to a file in SD card
+void writeFile(fs::FS &fs, const char * path, const char * message){
+    Serial.printf("Writing file: %s\n", path);
+
+    File file = fs.open(path, FILE_WRITE);
+    if(!file){
+        Serial.println("Failed to open file for writing");
+        return;
+    }
+    if(file.print(message)){
+        Serial.println("File written");
+    } else {
+        Serial.println("Write failed");
+    }
+    file.close();
+}
+// Creates function to append data to a file in SD card
+void appendFile(fs::FS &fs, const char * path, const char * message){
+    Serial.printf("Appending to file: %s\n", path);
+
+    File file = fs.open(path, FILE_APPEND);
+    if(!file){
+        Serial.println("Failed to open file for appending");
+        return;
+    }
+    if(file.print(message)){
+        Serial.println("Message appended");
+    } else {
+        Serial.println("Append failed");
+    }
+    file.close();
+}
 // initialize data variables here:
 // Packet counter:
 int counter = 0;
@@ -123,49 +175,40 @@ long GPSAlt = 0;
 long GPSHour = 0;
 long GPSMinute = 0;
 long GPSSecond = 0;
+long GPSSpeed = 0;
+long GPSHeading = 0;
+int GPSPDOP = 0;
 // BME 680:
 int temp = 0;
 int pressure = 0;
 int humidity = 0;
 int gas = 0;
-// SPD31:
-float diffPressure = 0;
-float diffTemp = 0;
+
 void loop() {
+  if (GNSS.getPVT()){
+    GPSLat = GNSS.getLatitude(); // divide Lat/Lon by 1000000 to get coords
+    GPSLon = GNSS.getLongitude();
+    GPSAlt = GNSS.getAltitude(); // measures in mm. Divide by 1000 for alt in m
+    // grab time from GPS - NOTE 10/4/23 - Not currently in use as requires changes to ground station tracker
+    //GPSHour = GNSS.getHour();
+    //GPSMinute = GNSS.getMinute();
+    //GPSSecond = GNSS.getSecond();
 
-  GPSLat = GNSS.getLatitude(); // divide Lat/Lon by 1000000 to get coords
-  //int GPSLatInt = GPSLat/10000000.0;
-  //float GPSLatFrac = (GPSLat/10000000.0) - GPSLatInt;
-  //long GPSLatDec = trunc(GPSLatFrac*10000000.0);
+    // grab heading, ground speed, and dilution of precision data
+    //GPSHeading = GNSS.getHeading(); //measurement in degrees * 10^-5
+    //GPSSpeed = GNSS.getGroundSpeed(); // measurement in mm/s
+    //GPSPDOP = GNSS.getPDOP(); 
+  }
 
-  GPSLon = GNSS.getLongitude();
-  //int GPSLonInt = GPSLon/10000000.0;
-  //float GPSLonFrac = ((GPSLon/10000000.0) - GPSLonInt)*-1.0;
-  //long GPSLonDec = trunc(GPSLonFrac*10000000.0);
-
-  GPSAlt = GNSS.getAltitude(); // measures in mm. Divide by 1000 for alt in m
-  //int GPSAltInt = GPSAlt/1000.0;
-  //float GPSAltFrac = (GPSAlt/1000.0) - GPSAltInt;
-  //long GPSAltDec = trunc(GPSAltFrac*1000.0);
-
-  // grab time from GPS - NOTE 10/4/23 - Not currently in use as requires changes to ground station tracker
-  GPSHour = GNSS.getHour();
-  GPSMinute = GNSS.getMinute();
-  GPSSecond = GNSS.getSecond();
-
-  //get atmospheric data
+  // get atmospheric data
   BME680.getSensorData(temp, humidity, pressure, gas);
   
-  //get differential pressure - for pressure difference between balloon/atmosphere
-  SDP31.triggeredMeasurement();
-  delay(45);
-  SDP31.readMeasurement(&diffPressure, &diffTemp);
-  long diffPressureInt = diffPressure;
   // you can transmit C-string or Arduino string up to
   // 256 characters long
 
   char output[256];
-  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity, diffPressureInt);
+  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d\n", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity);
+  appendFile(SD,"/HARdata.csv",output);
   Serial.println(output);
   int state = radio.transmit(output);
 
@@ -177,16 +220,6 @@ void loop() {
     Serial.print(F("[SX1276] Datarate:\t"));
     Serial.print(radio.getDataRate());
     Serial.println(F(" bps"));
-    // print GPS data to serial (for debugging)
-    Serial.print(F("[NEO-M9N] Latitude:\t"));
-    Serial.println(GNSS.getLatitude());
-    Serial.print(F("[NEO-M9N] Longitude:\t"));
-    Serial.println(GNSS.getLongitude());
-    Serial.print(F("[NEO-M9N] Altitude:\t"));
-    Serial.println(GNSS.getAltitude());
-    // print battery voltage
-
-    // print sensor data to serial
 
     Serial.print(F("[SX1276] Transmitting packet ... "));
   } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
@@ -202,7 +235,8 @@ void loop() {
     Serial.print(F("failed, code "));
     Serial.println(state);
   }
-
+  // clears RAM allocated to PVT processing - needs testing, might require re-initializing GPS every loop
+  GNSS.end();
   // wait for a second before transmitting again
   delay(1000);
 }
