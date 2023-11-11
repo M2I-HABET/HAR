@@ -22,9 +22,9 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> // Library found here: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library 
 #include <Zanshin_BME680.h>
 #include <Wire.h>
-#include "FS.h" //These three libraries are required for saving to an SD card.
-#include "SD.h"
-#include "SPI.h"
+#include "FS.h"
+#include "FFat.h"
+#include <SPI.h>
 
 // Redefine CS Pin Name
 // SPI_CS0:     ESP32
@@ -42,6 +42,7 @@
     #define PIN_SPI_SS SS
   #endif
 #endif
+
 
 SFE_UBLOX_GNSS GNSS;//
 BME680_Class BME680;
@@ -74,37 +75,19 @@ void setup() {
   Wire.begin();
   // GPS:
   Serial.print(F("[NEO-M9N] Initializing..."));
-  if (GNSS.begin() == false){
-    Serial.println(F("u-blox GNSS not detected. Freezing."));
-    while (1);  
-  }
+  //if (GNSS.begin() == false){
+  //  Serial.println(F("u-blox GNSS not detected. Freezing."));
+  //  while (1);  
+  //}
+  GNSS.begin();
   GNSS.setI2COutput(COM_TYPE_UBX); // Outputting UBX (U-blox binary protocol) only, no NMEA (National Marine Electronics Association)
   GNSS.setDynamicModel(DYN_MODEL_AIRBORNE2g); // Sets dynamic model to AIRBORNE2g. Other options: PORTABLE, STATIONARY, PEDESTRIAN, AUTOMOTIVE, SEA, AIRBORNE1g, AIRBORNE4g, WRIST, BIKE
   Serial.println(F("init success!"));
   delay(500);
   //SD Card Initialization:
-  if(!SD.begin()){
-    Serial.println("Card Mount Failed");
-    return;
-  }
-  uint8_t cardType = SD.cardType();
-  if(cardType == CARD_NONE){
-    Serial.println("No SD card attached");
-    return;
-  }
-  Serial.print("SD Card Type: ");
-  if(cardType == CARD_MMC){
-    Serial.println("MMC");
-  } else if(cardType == CARD_SD){
-    Serial.println("SDSC");
-  } else if(cardType == CARD_SDHC){
-    Serial.println("SDHC");
-  } else {
-    Serial.println("UNKNOWN");
-  }
-  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-  Serial.printf("SD Card Size: %lluMB\n", cardSize);
-  Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+  FFat.begin();
+  Serial.printf("Total space: %10u\n", FFat.totalBytes());
+  Serial.printf("Free space: %10u\n", FFat.freeBytes());
   // Radio: 
   Serial.print(F("[SX1276] Initializing ... "));
   int state = radio.begin(915.0); //-23dBm
@@ -134,37 +117,9 @@ void setup() {
   delay(100);
 }
 // Creates function to write data to a file in SD card
-void writeFile(fs::FS &fs, const char * path, const char * message){
-    Serial.printf("Writing file: %s\n", path);
 
-    File file = fs.open(path, FILE_WRITE);
-    if(!file){
-        Serial.println("Failed to open file for writing");
-        return;
-    }
-    if(file.print(message)){
-        Serial.println("File written");
-    } else {
-        Serial.println("Write failed");
-    }
-    file.close();
-}
 // Creates function to append data to a file in SD card
-void appendFile(fs::FS &fs, const char * path, const char * message){
-    Serial.printf("Appending to file: %s\n", path);
 
-    File file = fs.open(path, FILE_APPEND);
-    if(!file){
-        Serial.println("Failed to open file for appending");
-        return;
-    }
-    if(file.print(message)){
-        Serial.println("Message appended");
-    } else {
-        Serial.println("Append failed");
-    }
-    file.close();
-}
 // initialize data variables here:
 // Packet counter:
 int counter = 0;
@@ -197,7 +152,7 @@ void loop() {
     // grab heading, ground speed, and dilution of precision data
     //GPSHeading = GNSS.getHeading(); //measurement in degrees * 10^-5
     //GPSSpeed = GNSS.getGroundSpeed(); // measurement in mm/s
-    //GPSPDOP = GNSS.getPDOP(); 
+    GPSPDOP = GNSS.getPDOP(); 
   }
 
   // get atmospheric data
@@ -208,10 +163,19 @@ void loop() {
 
   char output[256];
   sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d\n", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity);
-  appendFile(SD,"/HARdata.csv",output);
-  Serial.println(output);
-  int state = radio.transmit(output);
+  File file = FFat.open("/HARdata.txt", FILE_WRITE);
+  file.print("$$HAR,");
+  file.print(GNSS.getLatitude());
+  file.print(",");
+  file.print(GNSS.getLongitude());
+  file.print(",");
+  file.println(GNSS.getAltitude());
+  file.close();
 
+  Serial.println(output);
+  //Serial.println(GPSPDOP);
+  int state = radio.transmit(output);
+  Serial.print(F("[SX1276] Transmitting packet ... "));
   if (state == RADIOLIB_ERR_NONE) {
     // the packet was successfully transmitted
     Serial.println(F(" success!"));
@@ -221,7 +185,6 @@ void loop() {
     Serial.print(radio.getDataRate());
     Serial.println(F(" bps"));
 
-    Serial.print(F("[SX1276] Transmitting packet ... "));
   } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
     // the supplied packet was longer than 256 bytes
     Serial.println(F("too long!"));
@@ -236,7 +199,7 @@ void loop() {
     Serial.println(state);
   }
   // clears RAM allocated to PVT processing - needs testing, might require re-initializing GPS every loop
-  GNSS.end();
+  //GNSS.end();
   // wait for a second before transmitting again
   delay(1000);
 }
