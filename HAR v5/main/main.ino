@@ -15,16 +15,15 @@
    Created by Nick Goeckner and Brandon Beavers
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: November 4, 2023
+   Last Updated: November 21, 2023
 */
 #include <Arduino.h>
 #include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> // Library found here: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library 
 #include <Zanshin_BME680.h>
 #include <Wire.h>
-#include "FS.h"
-#include "FFat.h"
 #include <SPI.h>
+#include <SD.h>
 
 // Redefine CS Pin Name
 // SPI_CS0:     ESP32
@@ -85,9 +84,12 @@ void setup() {
   Serial.println(F("init success!"));
   delay(500);
   //SD Card Initialization:
-  FFat.begin();
-  Serial.printf("Total space: %10u\n", FFat.totalBytes());
-  Serial.printf("Free space: %10u\n", FFat.freeBytes());
+  Serial.print("Initializing SD card...");
+  if (!SD.begin(16)) {
+    Serial.println("initialization failed!");
+    while (1);
+  }
+  Serial.println("init success!");
   // Radio: 
   Serial.print(F("[SX1276] Initializing ... "));
   int state = radio.begin(915.0); //-23dBm
@@ -163,13 +165,19 @@ void loop() {
 
   char output[256];
   sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d\n", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity);
-  File file = FFat.open("/HARdata.txt", FILE_WRITE);
+  File file = SD.open("/HARdata.csv", FILE_APPEND);
   file.print("$$HAR,");
-  file.print(GNSS.getLatitude());
+  file.print(GPSLat);
   file.print(",");
-  file.print(GNSS.getLongitude());
+  file.print(GPSLon);
   file.print(",");
-  file.println(GNSS.getAltitude());
+  file.print(GPSAlt);
+  file.print(",");
+  file.print(pressure);
+  file.print(",");
+  file.print(temp);
+  file.print(",");
+  file.println(humidity);
   file.close();
 
   Serial.println(output);
