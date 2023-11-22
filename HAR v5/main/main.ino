@@ -15,7 +15,7 @@
    Created by Nick Goeckner and Brandon Beavers
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: November 21, 2023
+   Last Updated: November 22, 2023
 */
 #include <Arduino.h>
 #include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
@@ -62,12 +62,14 @@ int pin_tx_enable = PWM0;
 int pin_rx_enable = G0;
 int pin_nrst =      G1;
 int pin_dio1 =      G2;
-
+int ledPin =        2;
   
 SX1276 radio = new Module(pin_cs, pin_dio0, pin_nrst, pin_dio1);
 
 // Initializes radio, serial, GPS, and I2C bus:
 void setup() {
+  // Status light:
+  pinMode(ledPin, OUTPUT);
   // Serial:
   Serial.begin(115200);
   // I2C:
@@ -118,9 +120,6 @@ void setup() {
   radio.setRfSwitchPins(pin_rx_enable, pin_tx_enable);
   delay(100);
 }
-// Creates function to write data to a file in SD card
-
-// Creates function to append data to a file in SD card
 
 // initialize data variables here:
 // Packet counter:
@@ -142,6 +141,30 @@ int humidity = 0;
 int gas = 0;
 
 void loop() {
+  // Receive:
+  // start listening for LoRa packets
+  String str;
+  Serial.print(F("[SX1276] Starting to listen ... "));
+  int receiverState = radio.receive(str);
+  if (receiverState == RADIOLIB_ERR_NONE) {
+    Serial.println(F("success!"));
+    Serial.print(F("[SX1276] Data:\t\t"));
+    Serial.println(str);
+  } else if (receiverState == RADIOLIB_ERR_RX_TIMEOUT) {
+    // timeout occurred while waiting for a packet
+    Serial.println(F("timeout!"));
+
+  } else if (receiverState == RADIOLIB_ERR_CRC_MISMATCH) {
+    // packet was received, but is malformed
+    Serial.println(F("CRC error!"));
+
+  } else {
+    Serial.print(F("failed, code "));
+    Serial.println(receiverState);
+    while (true);
+  }
+
+  // Transmit:
   if (GNSS.getPVT()){
     GPSLat = GNSS.getLatitude(); // divide Lat/Lon by 1000000 to get coords
     GPSLon = GNSS.getLongitude();
