@@ -63,14 +63,19 @@ void setup() {
     Serial.println(state);
     while (true);
   }
-
+  radio.setOutputPower(30);
   // some modules have an external RF switch
   // controlled via two pins (RX enable, TX enable)
   // to enable automatic control of the switch,
   // call the following method
   radio.setRfSwitchPins(pin_rx_enable, pin_tx_enable);
 }
-
+byte cmd1[] = {0x01};
+byte cmd2[] = {0x02};
+byte cmd3[] = {0x03};
+byte cmd4[] = {0x04};
+int var = 0;
+int transmissionState = RADIOLIB_ERR_NONE;
 void loop() {
   // Transmitting:
   if(Serial.available() > 0){
@@ -78,12 +83,54 @@ void loop() {
     if(var == 5){
       Serial.println("Select a command to send: ");
       Serial.println("1. Blinking Light");
+      Serial.println("2. [CySat] Power Status Request");
+      Serial.println("3. [CySat] Take Measurement Request");
+      Serial.println("4. [CySat] SDR Values Request");
       delay(1000);
       int cmdchoice = Serial.parseInt();
       switch (cmdchoice) {
         case 1:
           Serial.print(F("[SX1276] Sending packet ... "));
-          int transmissionState = radio.transmit("Hello World!");
+          transmissionState = radio.transmit(cmd1, 1);
+          if (transmissionState == RADIOLIB_ERR_NONE) {
+            // packet was successfully sent
+            Serial.println(F("transmission finished!"));
+          } else {
+            Serial.print(F("failed, code "));
+            Serial.println(transmissionState);
+          }
+          var = 0;
+          delay(500);
+          break;
+        case 2:
+          Serial.print(F("[SX1276] Sending packet ... "));
+          transmissionState = radio.transmit(cmd2, 1);
+          if (transmissionState == RADIOLIB_ERR_NONE) {
+            // packet was successfully sent
+            Serial.println(F("transmission finished!"));
+          } else {
+            Serial.print(F("failed, code "));
+            Serial.println(transmissionState);
+          }
+          var = 0;
+          delay(500);
+          break;
+        case 3:
+          Serial.print(F("[SX1276] Sending packet ... "));
+          transmissionState = radio.transmit(cmd3, 1);
+          if (transmissionState == RADIOLIB_ERR_NONE) {
+            // packet was successfully sent
+            Serial.println(F("transmission finished!"));
+          } else {
+            Serial.print(F("failed, code "));
+            Serial.println(transmissionState);
+          }
+          var = 0;
+          delay(500);
+          break;
+        case 4:
+          Serial.print(F("[SX1276] Sending packet ... "));
+          transmissionState = radio.transmit(cmd4, 1);
           if (transmissionState == RADIOLIB_ERR_NONE) {
             // packet was successfully sent
             Serial.println(F("transmission finished!"));

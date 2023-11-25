@@ -140,16 +140,44 @@ int pressure = 0;
 int humidity = 0;
 int gas = 0;
 
+int var = 0;
+byte cmd2[] = {0xFF,0x28,0x01,0x00, 0x00}; // replace end value w/ checksum
+byte cmd3[] = {0xFF,0x28,0x19,0x01,10800, 0x00}; // replace end value w/ checksum
+byte cmd4[] = {0xFF,0x28,0x17,0x00, 0x00}; // replace end value w/ checksum
+byte byteArr[1];
 void loop() {
   // Receive:
-  // start listening for LoRa packets
   String str;
   Serial.print(F("[SX1276] Starting to listen ... "));
-  int receiverState = radio.receive(str);
+  int receiverState = radio.receive(byteArr, 1);
+  var = byteArr[0];
   if (receiverState == RADIOLIB_ERR_NONE) {
     Serial.println(F("success!"));
-    Serial.print(F("[SX1276] Data:\t\t"));
-    Serial.println(str);
+    counter++;
+    switch (var){
+      case 1:
+        digitalWrite(ledPin, HIGH);
+        delay(500);
+        digitalWrite(ledPin, LOW);
+        delay(500);
+        var = 0;
+        break;
+      case 2:
+        Serial.write(cmd2, 5);
+        var = 0;
+        break;
+      case 3:
+        Serial.write(cmd3, 6);
+        var = 0;
+        break;
+      case 4:
+        Serial.write(cmd4, 5);
+        var = 0;
+        break;
+      default:
+        Serial.println("ERROR: Command not recognized");
+        break;  
+    }
   } else if (receiverState == RADIOLIB_ERR_RX_TIMEOUT) {
     // timeout occurred while waiting for a packet
     Serial.println(F("timeout!"));
@@ -187,7 +215,7 @@ void loop() {
   // 256 characters long
 
   char output[256];
-  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d\n", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity);
+  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity, counter);
   File file = SD.open("/HARdata.csv", FILE_APPEND);
   file.print("$$HAR,");
   file.print(GPSLat);
@@ -232,5 +260,5 @@ void loop() {
   // clears RAM allocated to PVT processing - needs testing, might require re-initializing GPS every loop
   //GNSS.end();
   // wait for a second before transmitting again
-  delay(1000);
+  //delay(1000);
 }
