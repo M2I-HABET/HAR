@@ -24,6 +24,7 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
+#include <Adafruit_SleepyDog.h>
 
 // Redefine CS Pin Name
 // SPI_CS0:     ESP32
@@ -74,6 +75,12 @@ void setup() {
   Serial.begin(115200);
   // I2C:
   Wire.begin();
+  // Watchdog:
+  Serial.println("Setting up WatchDog...");
+  int countdownMS = Watchdog.enable(10000);
+  Serial.print("Enabled the watchdog with max countdown of ");
+  Serial.print(countdownMS, DEC);
+  Serial.println(" milliseconds!");
   // GPS:
   Serial.print(F("[NEO-M9N] Initializing..."));
   //if (GNSS.begin() == false){
@@ -148,11 +155,11 @@ byte byteArr[1];
 void loop() {
   // Receive:
   String str;
-  Serial.print(F("[SX1276] Starting to listen ... "));
+  //Serial.print(F("[SX1276] Starting to listen ... "));
   int receiverState = radio.receive(byteArr, 1);
   var = byteArr[0];
   if (receiverState == RADIOLIB_ERR_NONE) {
-    Serial.println(F("success!"));
+    //Serial.println(F("success!"));
     counter++;
     switch (var){
       case 1:
@@ -180,15 +187,15 @@ void loop() {
     }
   } else if (receiverState == RADIOLIB_ERR_RX_TIMEOUT) {
     // timeout occurred while waiting for a packet
-    Serial.println(F("timeout!"));
+    //Serial.println(F("timeout!"));
 
   } else if (receiverState == RADIOLIB_ERR_CRC_MISMATCH) {
     // packet was received, but is malformed
-    Serial.println(F("CRC error!"));
+    //Serial.println(F("CRC error!"));
 
   } else {
-    Serial.print(F("failed, code "));
-    Serial.println(receiverState);
+    //Serial.print(F("failed, code "));
+    //Serial.println(receiverState);
     while (true);
   }
 
@@ -198,9 +205,9 @@ void loop() {
     GPSLon = GNSS.getLongitude();
     GPSAlt = GNSS.getAltitude(); // measures in mm. Divide by 1000 for alt in m
     // grab time from GPS - NOTE 10/4/23 - Not currently in use as requires changes to ground station tracker
-    //GPSHour = GNSS.getHour();
-    //GPSMinute = GNSS.getMinute();
-    //GPSSecond = GNSS.getSecond();
+    GPSHour = GNSS.getHour();
+    GPSMinute = GNSS.getMinute();
+    GPSSecond = GNSS.getSecond();
 
     // grab heading, ground speed, and dilution of precision data
     //GPSHeading = GNSS.getHeading(); //measurement in degrees * 10^-5
@@ -218,6 +225,12 @@ void loop() {
   sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity, counter);
   File file = SD.open("/HARdata.csv", FILE_APPEND);
   file.print("$$HAR,");
+  file.print(GPSHour);
+  file.print(":");
+  file.print(GPSMinute);
+  file.print(":");
+  file.print(GPSSecond);
+  file.print(",");
   file.print(GPSLat);
   file.print(",");
   file.print(GPSLon);
@@ -234,31 +247,33 @@ void loop() {
   Serial.println(output);
   //Serial.println(GPSPDOP);
   int state = radio.transmit(output);
-  Serial.print(F("[SX1276] Transmitting packet ... "));
+  //Serial.print(F("[SX1276] Transmitting packet ... "));
   if (state == RADIOLIB_ERR_NONE) {
     // the packet was successfully transmitted
-    Serial.println(F(" success!"));
+    //Serial.println(F(" success!"));
 
     // print measured data rate
-    Serial.print(F("[SX1276] Datarate:\t"));
-    Serial.print(radio.getDataRate());
-    Serial.println(F(" bps"));
+    //Serial.print(F("[SX1276] Datarate:\t"));
+    //Serial.print(radio.getDataRate());
+    //Serial.println(F(" bps"));
 
   } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
     // the supplied packet was longer than 256 bytes
-    Serial.println(F("too long!"));
+    //Serial.println(F("too long!"));
 
   } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
     // timeout occurred while transmitting packet
-    Serial.println(F("timeout!"));
+    //Serial.println(F("timeout!"));
 
   } else {
     // some other error occurred
-    Serial.print(F("failed, code "));
-    Serial.println(state);
+    //Serial.print(F("failed, code "));
+    //Serial.println(state);
   }
   // clears RAM allocated to PVT processing - needs testing, might require re-initializing GPS every loop
   //GNSS.end();
+  // reset watchdog timer
+  Watchdog.reset();
   // wait for a second before transmitting again
-  //delay(1000);
+  delay(1000);
 }

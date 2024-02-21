@@ -74,13 +74,14 @@ byte cmd1[] = {0x01};
 byte cmd2[] = {0x02};
 byte cmd3[] = {0x03};
 byte cmd4[] = {0x04};
-int var = 0;
+String var = "";
 int transmissionState = RADIOLIB_ERR_NONE;
 void loop() {
   // Transmitting:
   if(Serial.available() > 0){
-    var = Serial.parseInt();
-    if(var == 5){
+    var = Serial.readString();
+    var.trim();
+    if(var == "cmd"){
       Serial.println("Select a command to send: ");
       Serial.println("1. Blinking Light");
       Serial.println("2. [CySat] Power Status Request");
@@ -99,7 +100,7 @@ void loop() {
             Serial.print(F("failed, code "));
             Serial.println(transmissionState);
           }
-          var = 0;
+          var = "";
           delay(500);
           break;
         case 2:
@@ -112,7 +113,7 @@ void loop() {
             Serial.print(F("failed, code "));
             Serial.println(transmissionState);
           }
-          var = 0;
+          var = "";
           delay(500);
           break;
         case 3:
@@ -125,7 +126,7 @@ void loop() {
             Serial.print(F("failed, code "));
             Serial.println(transmissionState);
           }
-          var = 0;
+          var = "";
           delay(500);
           break;
         case 4:
@@ -138,7 +139,7 @@ void loop() {
             Serial.print(F("failed, code "));
             Serial.println(transmissionState);
           }
-          var = 0;
+          var = "";
           delay(500);
           break;
         default:
@@ -151,7 +152,7 @@ void loop() {
 
   // Receiving:
   while (Serial.available() == 0){
-    Serial.print(F("[SX1276] Waiting for incoming transmission ... "));
+    //Serial.print(F("[SX1276] Waiting for incoming transmission ... "));
 
     // you can receive data as an Arduino String
     // NOTE: receive() is a blocking method!
@@ -168,7 +169,7 @@ void loop() {
 
     if (state == RADIOLIB_ERR_NONE) {
       // packet was successfully received
-      Serial.println(F("success!"));
+      //Serial.println(F("success!"));
 
       // print the data of the packet
       //Serial.print(F("[SX1276] Data:\t\t\t"));
@@ -194,16 +195,16 @@ void loop() {
 
     } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
       // timeout occurred while waiting for a packet
-      Serial.println(F("timeout!"));
+      //Serial.println(F("timeout!"));
 
     } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
       // packet was received, but is malformed
-      Serial.println(F("CRC error!"));
+      //Serial.println(F("CRC error!"));
 
     } else {
       // some other error occurred
-      Serial.print(F("failed, code "));
-      Serial.println(state);
+      //Serial.print(F("failed, code "));
+      //Serial.println(state);
     }
   }
 }
