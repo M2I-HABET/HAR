@@ -15,7 +15,7 @@
    Created by Nick Goeckner and Brandon Beavers
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: November 22, 2023
+   Last Updated: March 1, 2023
 */
 #include <Arduino.h>
 #include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
@@ -210,8 +210,8 @@ void loop() {
     GPSSecond = GNSS.getSecond();
 
     // grab heading, ground speed, and dilution of precision data
-    //GPSHeading = GNSS.getHeading(); //measurement in degrees * 10^-5
-    //GPSSpeed = GNSS.getGroundSpeed(); // measurement in mm/s
+    GPSHeading = GNSS.getHeading(); //measurement in degrees * 10^-5
+    GPSSpeed = GNSS.getGroundSpeed(); // measurement in mm/s
     GPSPDOP = GNSS.getPDOP(); 
   }
 
@@ -222,7 +222,7 @@ void loop() {
   // 256 characters long
 
   char output[256];
-  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d", GPSLat, GPSLon, GPSAlt, pressure, temp, humidity, counter);
+  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d", GPSLat, GPSLon, GPSAlt, GPSHeading, GPSSpeed, GPSPDOP, pressure, temp, humidity, counter);
   File file = SD.open("/HARdata.csv", FILE_APPEND);
   file.print("$$HAR,");
   file.print(GPSHour);
@@ -236,6 +236,12 @@ void loop() {
   file.print(GPSLon);
   file.print(",");
   file.print(GPSAlt);
+  file.print(",");
+  file.print(GPSHeading);
+  file.print(",");
+  file.print(GPSSpeed);
+  file.print(",");
+  file.print(GPSPDOP);
   file.print(",");
   file.print(pressure);
   file.print(",");
