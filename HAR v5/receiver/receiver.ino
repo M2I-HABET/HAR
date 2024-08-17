@@ -173,13 +173,14 @@ void loop() {
 
       // print the data of the packet
       //Serial.print(F("[SX1276] Data:\t\t\t"));
-      Serial.println(str);
-
+      Serial.print(str);
+      Serial.print(",");
+      Serial.println(radio.getRSSI());
       // print the RSSI (Received Signal Strength Indicator)
       // of the last received packet
-      Serial.print(F("[SX1276] RSSI:\t\t\t"));
-      Serial.print(radio.getRSSI());
-      Serial.println(F(" dBm"));
+      //Serial.print(F("[SX1276] RSSI:\t\t\t"));
+      //Serial.print(radio.getRSSI());
+      //Serial.println(F(" dBm"));
 
       // print the SNR (Signal-to-Noise Ratio)
       // of the last received packet
