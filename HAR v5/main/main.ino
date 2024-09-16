@@ -64,6 +64,7 @@ int pin_rx_enable = G0;
 int pin_nrst =      G1;
 int pin_dio1 =      G2;
 int ledPin =        2;
+int battPin =       39;
   
 SX1276 radio = new Module(pin_cs, pin_dio0, pin_nrst, pin_dio1);
 
@@ -146,12 +147,16 @@ int temp = 0;
 int pressure = 0;
 int humidity = 0;
 int gas = 0;
+int batt = 0;
+float volt;
 
 int var = 0;
 byte cmd2[] = {0xFF,0x28,0x01,0x00, 0x00}; // replace end value w/ checksum
 byte cmd3[] = {0xFF,0x28,0x19,0x01,10800, 0x00}; // replace end value w/ checksum
 byte cmd4[] = {0xFF,0x28,0x17,0x00, 0x00}; // replace end value w/ checksum
 byte byteArr[1];
+
+
 void loop() {
   // Receive:
   String str;
@@ -217,12 +222,17 @@ void loop() {
 
   // get atmospheric data
   BME680.getSensorData(temp, humidity, pressure, gas);
+
+  // Get Battery Data
+
+  batt = analogRead(battPin);
+  volt = (analogRead(battPin) * (3.3 / 4096)) * 3;
   
   // you can transmit C-string or Arduino string up to
   // 256 characters long
 
   char output[256];
-  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d", GPSLat, GPSLon, GPSAlt, GPSHeading, GPSSpeed, GPSPDOP, pressure, temp, humidity, counter);
+  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f", GPSLat, GPSLon, GPSAlt, GPSHeading, GPSSpeed, GPSPDOP, pressure, temp, humidity, counter,volt);
   File file = SD.open("/HARdata.csv", FILE_APPEND);
   file.print("$$HAR,");
   file.print(GPSHour);
