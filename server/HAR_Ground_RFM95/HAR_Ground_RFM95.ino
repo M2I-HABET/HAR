@@ -1,6 +1,6 @@
 /* ======================================
 HABET LoRa Ground Statsion
-Version: 1.0
+Version: 1.1
 
 LoRa Ground Station based on the RFM95 chip sets
 Should be compatible with most Adafruit RFM95 boards
@@ -144,7 +144,7 @@ void loop() {
       char *pdop    = strtok(NULL, ",");
       char *pressure= strtok(NULL, ",");
       char *temp    = strtok(NULL, ",");
-      char *humidit = strtok(NULL, ",");
+      char *humidity = strtok(NULL, ",");
       char *gas     = strtok(NULL, ",");
       char *batt    = strtok(NULL, ",");
 
@@ -152,22 +152,26 @@ void loop() {
       // For example, dividing by 100 to get the correct value.
       float pressureVal = pressure ? atof(pressure) / 100.0 : 0.0;
       float tempVal     = temp     ? atof(temp)     / 100.0 : 0.0;
-      float humidVal    = humidit  ? atof(humidit)  / 1000.0 : 0.0;
+      float humidVal    = humidity ? atof(humidity)  / 1000.0 : 0.0;
+      float LatVal      = lat      ? atof(lat) / 10000000.0 : 0.0;
+      float LonVal      = lon     ? atof(lon)     / 10000000.0 : 0.0;
+      float AltVal      = alt  ? atof(alt)  / 1000.0 : 0.0;
+      float headVal     = heading  ? atof(heading)  / 100000.0 : 0.0;
 
       // Print header (if desired; you might consider printing this once in setup())
-      Serial.println("IDENT       #         LAT       LON       Alt       PAlt      Heading   Speed     PDOP      Pressure  TempC      Humidity   Gas       Batt");
+      Serial.println("IDENT Packet#   LAT        LON         Alt       PAlt     Heading    Speed     PDOP     Pressure  TempC     Humidity  Gas       Batt");
 
       // Prepare a formatted output row with the converted values.
       // Adjust field widths as needed.
       char output[150];
-      sprintf(output, "%-12s %-9s %-9s %-9s %-9s %-9s %-9s %-9s %-9s %-9.2f %-9.2f %-9.2f %-9s %-9s",
+      sprintf(output, "%-6s %-8s %-9.7f %-9.7f %-9.3f %-9s %-9.3f %-9s %-9s %-9.2f %-9.2f %-9.2f %-9s %-9s",
               ident   ? ident   : "",
               num     ? num     : "",
-              lat     ? lat     : "",
-              lon     ? lon     : "",
-              alt     ? alt     : "",
+              LatVal,
+              LonVal,
+              AltVal,
               pAlt    ? pAlt    : "",
-              heading ? heading : "",
+              headVal,
               speed   ? speed   : "",
               pdop    ? pdop    : "",
               pressureVal,
