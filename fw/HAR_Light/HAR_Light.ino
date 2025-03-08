@@ -11,7 +11,6 @@
    Last Updated: March 4, 2025
 */
 #include <Arduino.h>
-//#include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> // Library found here: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library 
 #include <Zanshin_BME680.h>
 #include <Wire.h>
@@ -33,11 +32,12 @@
   #endif
 #endif
 */
-
-SFE_UBLOX_GNSS GNSS;//
+// Instantiate the GPS and BME680 sensor classes
+SFE_UBLOX_GNSS GNSS;
 BME680_Class BME680;
-///< Forward function declaration with default value for sea level
-float altitude(const int32_t press, const float seaLevel = 1013.25);
+// Configure for calculating Altitude. This requires that the current 
+// pressure reading at time of launch is entered. 30.11
+float altitude(const int32_t press, const float seaLevel = 1019.64);
 float altitude(const int32_t press, const float seaLevel) {
   /*!
   @brief     This converts a pressure measurement into a height in meters
@@ -52,8 +52,9 @@ float altitude(const int32_t press, const float seaLevel) {
   Altitude =
       44330.0 * (1.0 - pow(((float)press / 100.0) / seaLevel, 0.1903));  // Convert into meters
   return (Altitude);
-}  // of method altitude()
+} 
 
+// Define pins for RFM95 on the RP2040 RFM95 board
 #define RFM95_CS   16
 #define RFM95_INT  21
 #define RFM95_RST  17
@@ -201,7 +202,8 @@ void loop() {
 
   char output[90];
   //uint8_t data[] = " ";
-  sprintf(output, "$HAR, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f", packetnum++,GPSLat, GPSLon, GPSAlt, GPSHeading, GPSSpeed, GPSPDOP, pressure, temp, humidity, gas,volt);
+  
+  sprintf(output, "$HAR, %d, %d, %d, %d, %.2f, %d, %d, %d, %d, %d, %d, %d, %.2f", packetnum++,GPSLat, GPSLon, GPSAlt, alt, GPSHeading, GPSSpeed, GPSPDOP, pressure, temp, humidity, gas,volt);
   //File file = SD.open("/HARdata.csv", FILE_APPEND);
   //file.print("$$HAR,");
   //file.print(GPSHour);
