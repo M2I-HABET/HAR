@@ -39,6 +39,13 @@ Current HAR Hardware tested and verified:
   #define RFM95_INT  21
   #define RFM95_RST  17
 
+// Pin configuration for SparkFun MicroMod LoRa SX1276 (adjust as needed)
+#if defined(ARDUINO_ADAFRUIT_FEATHER_RP2040_RFM)  // Feather RP2040 w/Radio (as a reference)
+  #define RFM95_CS    16    // SPI Chip Select pin
+  #define RFM95_INT   21    // Interrupt pin
+  #define RFM95_RST   17    // Reset pin
+#endif
+
 #elif defined (__AVR_ATmega328P__)  // Feather 328P w/wing
   #define RFM95_CS    4  //
   #define RFM95_INT   3  //
