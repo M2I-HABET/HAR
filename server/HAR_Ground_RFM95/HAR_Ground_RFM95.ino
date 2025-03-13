@@ -22,9 +22,10 @@ Current HAR Hardware tested and verified:
 
 #include <SPI.h>
 #include <RH_RF95.h>
+#include <LoRa.h>
 
 // First 3 here are boards w/radio BUILT-IN. Boards using FeatherWing follow.
-#if defined (__AVR_ATmega32U4__)  // Feather 32u4 w/Radio
+#if defined(__AVR_ATmega32U4__)  // Feather 32u4 w/Radio
   #define RFM95_CS    8
   #define RFM95_INT   7
   #define RFM95_RST   4
@@ -40,11 +41,11 @@ Current HAR Hardware tested and verified:
   #define RFM95_RST  17
 
 // Pin configuration for SparkFun MicroMod LoRa SX1276 (adjust as needed)
-#if defined(ARDUINO_ADAFRUIT_FEATHER_RP2040_RFM)  // Feather RP2040 w/Radio (as a reference)
-  #define RFM95_CS    16    // SPI Chip Select pin
-  #define RFM95_INT   21    // Interrupt pin
-  #define RFM95_RST   17    // Reset pin
-#endif
+#elif defined(ARDUINO_ADAFRUIT_FEATHER_RP2040_RFM)  // Feather RP2040 w/Radio (as a reference)
+  #define RFM95_CS    5   // Chip select pin (change as necessary)
+  #define RFM95_RST   4   // Reset pin (change as necessary)
+  #define RFM95_INT   2   // Interrupt pin (change as necessary)
+  #define LED_PIN     13  // Onboard LED
 
 #elif defined (__AVR_ATmega328P__)  // Feather 328P w/wing
   #define RFM95_CS    4  //
@@ -65,6 +66,7 @@ Current HAR Hardware tested and verified:
   #define RFM95_CS   33  // "B"
   #define RFM95_INT  27  // "A"
   #define RFM95_RST  13
+  #define PIN_LED    13
 
 #elif defined(ARDUINO_NRF52832_FEATHER)  // nRF52832 feather w/wing
   #define RFM95_CS   11  // "B"
