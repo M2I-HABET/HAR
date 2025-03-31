@@ -1,5 +1,5 @@
 /*
-   HAR 5.0 Ground Station Receiver Code
+   HAR 6.0 Ground Station Receiver Code
 
    Updated for Adafruit Feather ESP32 with RFM95 compatibility
    Created by Nick Goeckner and Brandon Beaver
