@@ -22,6 +22,7 @@ Current HAR Hardware tested and verified:
 
 #include <SPI.h>
 #include <RH_RF95.h>
+#include <RH_SX126x.h>
 #include <LoRa.h>
 
 // First 3 here are boards w/radio BUILT-IN. Boards using FeatherWing follow.
@@ -84,8 +85,38 @@ Current HAR Hardware tested and verified:
 // you can set transmitter powers from 5 to 23 dBm:
 #define RF95_PWR 23
 
+#ifndef PIN_SPI_SS
+  // For Artemis
+  #ifdef SS
+    #define PIN_SPI_SS SPI_CS
+  #endif
+  // For ESP32
+  #ifdef SPI_CS0
+    #define PIN_SPI_SS SS
+  #endif
+#endif
+
+// SX1276 pin connections:
+//       | SLOT 0 | SLOT 1 |
+//==========================
+// cs    |   CS0  |   CS1  |
+// dio0  |   D0   |   D1   |
+// dio1  |   G2   |   G7   |
+// dio2  |   G3   |   G8   |
+// rst   |   G1   |   G6   |
+// tx_en |  PWM0  |  PWM1  |
+// rx_en |   G0   |   G5   |
+
+    int pin_cs =        PIN_SPI_SS;
+    int pin_dio0 =      D0;
+    int pin_tx_enable = PWM0;
+    int pin_rx_enable = G0;
+    int pin_nrst =      G1;
+    int pin_dio1 =      G2;
+
 // Singleton instance of the radio driver
-RH_RF95 rf95(RFM95_CS, RFM95_INT);
+//RH_RF95 rf95(RFM95_CS, RFM95_INT);
+RH_SX126x driver(SS, G2, G3, G1); // NSS, DIO1, BUSY, NRESET
 
 // ========= Setup Hardware =========================
 void setup() {
