@@ -55,7 +55,7 @@ void setup() {
 
   // initialize SX1276 with default settings
   Serial.print(F("[SX1276] Initializing ... "));
-  int state = radio.begin(911.0);
+  int state = radio.begin(915.0);
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("success!"));
   } else {

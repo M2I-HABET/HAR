@@ -102,7 +102,7 @@ void setup() {
   Serial.println("init success!");
   // Radio: 
   Serial.print(F("[SX1276] Initializing ... "));
-  int state = radio.begin(911.0); //-23dBm
+  int state = radio.begin(915.0); //-23dBm
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("init success!"));
   } else {
