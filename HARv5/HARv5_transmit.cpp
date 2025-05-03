@@ -12,12 +12,11 @@
    error. This is because the Function One slot uses the GPIO pins 6-11, which the ESP32 requires to be
    open.
 
-   Created by Nick Goeckner and Brandon Beaver
+   Created by Nick Goeckner and Brandon Beavers
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: April 18, 2025
+   Last Updated: March 1, 2024
 */
-
 #include <Arduino.h>
 #include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> // Library found here: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library 
@@ -103,7 +102,7 @@ void setup() {
   Serial.println("init success!");
   // Radio: 
   Serial.print(F("[SX1276] Initializing ... "));
-  int state = radio.begin(915.0); //-23dBm
+  int state = radio.begin(911.0); //-23dBm
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("init success!"));
   } else {

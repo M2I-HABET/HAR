@@ -2,11 +2,11 @@
    HAR 5.0 Ground Station Receiver Code
 
 
-   Created by Nick Goeckner and Brandon Beaver
+   Created by Nick Goeckner and Brandon Beavers
    Based on example code by Wes Furuya
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: April 18, 2025
+   Last Updated: November 22, 2023
 
    
 */
@@ -55,7 +55,7 @@ void setup() {
 
   // initialize SX1276 with default settings
   Serial.print(F("[SX1276] Initializing ... "));
-  int state = radio.begin(915.0);
+  int state = radio.begin(911.0);
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("success!"));
   } else {
