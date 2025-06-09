@@ -65,6 +65,9 @@ int pin_nrst =      G1;
 int pin_dio1 =      G2;
 int ledPin =        2;
 int battPin =       39;
+const int DynModpin =2;
+int i;
+
   
 SX1276 radio = new Module(pin_cs, pin_dio0, pin_nrst, pin_dio1);
 
@@ -72,6 +75,7 @@ SX1276 radio = new Module(pin_cs, pin_dio0, pin_nrst, pin_dio1);
 void setup() {
   // Status light:
   pinMode(ledPin, OUTPUT);
+  pinMode(DynModpin, OUTPUT);
   // Serial:
   Serial.begin(115200);
   // I2C:
@@ -91,6 +95,27 @@ void setup() {
   GNSS.begin();
   GNSS.setI2COutput(COM_TYPE_UBX); // Outputting UBX (U-blox binary protocol) only, no NMEA (National Marine Electronics Association)
   GNSS.setDynamicModel(DYN_MODEL_AIRBORNE2g); // Sets dynamic model to AIRBORNE2g. Other options: PORTABLE, STATIONARY, PEDESTRIAN, AUTOMOTIVE, SEA, AIRBORNE1g, AIRBORNE4g, WRIST, BIKE
+  Serial.print("Dynamic model set: ");
+  Serial.println(GNSS.getDynamicModel()); // Prints the dynamic model set to the serial monitor
+  bool modelSet = GNSS.setDynamicModel(DYN_MODEL_AIRBORNE2g);
+  if (modelSet) {
+    // Blink 6 times for AIRBORNE2g
+    for (int i = 0; i < 6; i++) {
+      digitalWrite(DynModpin, HIGH);
+      delay(200);
+      digitalWrite(DynModpin, LOW);
+      delay(200);
+    }
+  } else {
+    // Optional: indicate failure (e.g., 3 long blinks)
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(DynModpin, HIGH);
+      delay(600);
+      digitalWrite(DynModpin, LOW);
+      delay(600);
+    }
+  }
+
   Serial.println(F("init success!"));
   delay(500);
   //SD Card Initialization:
@@ -126,8 +151,6 @@ void setup() {
   BME680.setIIRFilter(IIR4);  // Use enumerated type values
   Serial.print(F("- Setting gas measurement to 320\xC2\xB0\x43 for 150ms\n"));  // "�C" symbols
   BME680.setGas(320, 150);  // 320�c for 150 milliseconds
-
-  radio.setRfSwitchPins(pin_rx_enable, pin_tx_enable);
   delay(100);
 }
 
@@ -144,6 +167,8 @@ long GPSSecond = 0;
 long GPSSpeed = 0;
 long GPSHeading = 0;
 int GPSPDOP = 0;
+int GPSFixType = 0;
+int GPSCheckStatus = 0; // Check status of GPS module, 0 = no fix, 1 = fix, 2 = RTK fix, 3 = DGPS fix, 4 = PPP fix, 5 = SBAS fix
 // BME 680:
 int temp = 0;
 int pressure = 0;
@@ -151,6 +176,7 @@ int humidity = 0;
 int gas = 0;
 int batt = 0;
 float volt;
+
 
 int var = 0;
 byte cmd2[] = {0xFF,0x28,0x01,0x00, 0x00}; // replace end value w/ checksum
@@ -219,7 +245,9 @@ void loop() {
     // grab heading, ground speed, and dilution of precision data
     GPSHeading = GNSS.getHeading(); //measurement in degrees * 10^-5
     GPSSpeed = GNSS.getGroundSpeed(); // measurement in mm/s
-    GPSPDOP = GNSS.getPDOP(); 
+    GPSPDOP = GNSS.getPDOP();
+    GPSFixType = GNSS.getFixType(); // Get fix type (0-5, 0 = no fix, 5 = RTK fix)
+    GPSCheckStatus = GNSS.checkUblox(); // Check status of GPS module, 0 = no fix, 1 = fix, 2 = RTK fix, 3 = DGPS fix, 4 = PPP fix, 5 = SBAS fix
   }
 
   // get atmospheric data
@@ -234,7 +262,7 @@ void loop() {
   // 256 characters long
 
   char output[256];
-  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f", GPSLat, GPSLon, GPSAlt, GPSHeading, GPSSpeed, GPSPDOP, pressure, temp, humidity, counter,volt);
+  sprintf(output, "$$HAR, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f", GPSLat, GPSLon, GPSAlt, GPSHeading, GPSSpeed, GPSPDOP, pressure, temp, humidity, GPSFixType, GPSCheckStatus, counter,volt);
   File file = SD.open("/HARdata.csv", FILE_APPEND);
   file.print("$$HAR,");
   file.print(GPSHour);
@@ -260,6 +288,10 @@ void loop() {
   file.print(temp);
   file.print(",");
   file.println(humidity);
+  file.print(",");
+  file.print(GPSFixType);
+  file.print(",");
+  file.print(GPSCheckStatus);
   file.close();
 
   Serial.println(output);
