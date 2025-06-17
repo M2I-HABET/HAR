@@ -1,5 +1,5 @@
 /*
-   HAR v5.0 (MicroMod)
+   HAR v5.1 (MicroMod)
 
    Main program to be run on version 5.0 of HABET's High Altitude Reporter (HAR).
    Handles intake of GPS and sensor data and outputs over 915 MHz LoRa module to
@@ -12,10 +12,10 @@
    error. This is because the Function One slot uses the GPIO pins 6-11, which the ESP32 requires to be
    open.
 
-   Created by Nick Goeckner and Brandon Beavers
+   Created by Nick Goeckner and Brandon Beaver
    M2I HABET
    Date Created: July 13, 2023
-   Last Updated: March 1, 2024
+   Last Updated: June 17, 2025
 */
 #include <Arduino.h>
 #include <RH_RF95.h> //RadioHead library
