@@ -18,7 +18,7 @@
    Last Updated: March 1, 2024
 */
 #include <Arduino.h>
-#include <RadioLib.h> //Click here to get the library:    https://jgromes.github.io/RadioLib/
+#include <RH_RF95.h> //RadioHead library
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> // Library found here: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library 
 #include <Zanshin_BME680.h>
 #include <Wire.h>
@@ -31,6 +31,8 @@
 // SS:          ESP32, nRF, RP2040
 // SPI_CS:      Artemis
 // PIN_SPI_SS:  STM32, SAMD51, nRF, RP2040
+
+#define RF95_FREQ      915.0
 
 #ifndef PIN_SPI_SS
   // For Artemis
@@ -57,7 +59,7 @@ BME680_Class BME680;
 // tx_en |  PWM0  |  PWM1  |
 // rx_en |   G0   |   G5   |
 
-int pin_cs =        PIN_SPI_SS;
+int pin_cs =        5;
 int pin_dio0 =      D0;
 int pin_tx_enable = PWM0;
 int pin_rx_enable = G0;
@@ -69,7 +71,7 @@ const int DynModpin =2;
 int i;
 
   
-SX1276 radio = new Module(pin_cs, pin_dio0, pin_nrst, pin_dio1);
+RH_RF95 rf95(pin_cs, pin_dio0);
 
 // Initializes radio, serial, GPS, and I2C bus:
 void setup() {
@@ -127,17 +129,37 @@ void setup() {
   Serial.println("init success!");
   // Radio: 
   Serial.print(F("[SX1276] Initializing ... "));
-  int state = radio.begin(915.0); //-23dBm
-  if (state == RADIOLIB_ERR_NONE) {
-    Serial.println(F("init success!"));
-  } else {
-    Serial.print(F("failed, code "));
-    Serial.println(state);
-    while (true);
+    // LoRa Pin setup
+  pinMode(pin_tx_enable, OUTPUT);
+  pinMode(pin_rx_enable, OUTPUT);
+  pinMode(pin_nrst, OUTPUT);
+
+  digitalWrite(pin_tx_enable, LOW);
+  digitalWrite(pin_rx_enable, HIGH);  // Start in RX mode
+
+  // Reset LoRa
+  digitalWrite(pin_nrst, LOW);
+  delay(10);
+  digitalWrite(pin_nrst, HIGH);
+  delay(10);
+
+  Serial.print(F("[SX1276] Initializing ... "));
+  if (!rf95.init()) {
+    Serial.println("init failed!");
+    while (1);
   }
-  radio.setOutputPower(30, true);                           // sets output power to 20 dBm and enables PA_BOOST
-  radio.setRfSwitchPins(pin_rx_enable, pin_tx_enable);      // enables PA1 and PA2
-  
+
+  if (!rf95.setFrequency(RF95_FREQ)) {
+    Serial.println("setFrequency failed");
+    while (1);
+  }
+
+  rf95.setTxPower(23, false);  // PA_BOOST = false = true for SX1276, range 5-23 dBm
+  rf95.setSpreadingFactor(9); // SF7..12
+  rf95.setSignalBandwidth(62500); // 62.5kHz
+  rf95.setCodingRate4(5); // 4/5
+  Serial.println("init success!");
+
   // BME-680:
   while (!BME680.begin(I2C_STANDARD_MODE)) {                // Start BME680 using I2C, use first device found
     Serial.print(F("-  Unable to find BME680. Trying again in 5 seconds.\n"));
@@ -170,12 +192,13 @@ int GPSPDOP = 0;
 int GPSFixType = 0;
 int GPSCheckStatus = 0; // Check status of GPS module, 0 = no fix, 1 = fix, 2 = RTK fix, 3 = DGPS fix, 4 = PPP fix, 5 = SBAS fix
 // BME 680:
-int temp = 0;
-int pressure = 0;
-int humidity = 0;
-int gas = 0;
+int32_t temp = 0;
+int32_t pressure = 0;
+int32_t humidity = 0;
+int32_t gas = 0;
+//power reading
 int batt = 0;
-float volt;
+float volt = 0.0;
 
 
 int var = 0;
@@ -186,50 +209,35 @@ byte byteArr[1];
 
 
 void loop() {
-  // Receive:
-  String str;
-  //Serial.print(F("[SX1276] Starting to listen ... "));
-  int receiverState = radio.receive(byteArr, 1);
-  var = byteArr[0];
-  if (receiverState == RADIOLIB_ERR_NONE) {
-    //Serial.println(F("success!"));
-    counter++;
-    switch (var){
-      case 1:
-        digitalWrite(ledPin, HIGH);
-        delay(500);
-        digitalWrite(ledPin, LOW);
-        delay(500);
-        var = 0;
-        break;
-      case 2:
-        Serial.write(cmd2, 5);
-        var = 0;
-        break;
-      case 3:
-        Serial.write(cmd3, 6);
-        var = 0;
-        break;
-      case 4:
-        Serial.write(cmd4, 5);
-        var = 0;
-        break;
-      default:
-        Serial.println("ERROR: Command not recognized");
-        break;  
+ // Receive
+  uint8_t buf[64];
+  uint8_t len = sizeof(buf);
+  int var = 0;
+
+  if (rf95.available()) {
+    if (rf95.recv(buf, &len)) {
+      var = buf[0];
+      counter++;
+
+      switch (var) {
+        case 1:
+          digitalWrite(ledPin, HIGH); delay(500);
+          digitalWrite(ledPin, LOW);  delay(500);
+          break;
+        case 2:
+          Serial.write(cmd2, 5);
+          break;
+        case 3:
+          Serial.write(cmd3, 6);
+          break;
+        case 4:
+          Serial.write(cmd4, 5);
+          break;
+        default:
+          Serial.println("ERROR: Command not recognized");
+          break;
+      }
     }
-  } else if (receiverState == RADIOLIB_ERR_RX_TIMEOUT) {
-    // timeout occurred while waiting for a packet
-    //Serial.println(F("timeout!"));
-
-  } else if (receiverState == RADIOLIB_ERR_CRC_MISMATCH) {
-    // packet was received, but is malformed
-    //Serial.println(F("CRC error!"));
-
-  } else {
-    //Serial.print(F("failed, code "));
-    //Serial.println(receiverState);
-    while (true);
   }
 
   // Transmit:
@@ -294,36 +302,16 @@ void loop() {
   file.print(GPSCheckStatus);
   file.close();
 
-  Serial.println(output);
-  //Serial.println(GPSPDOP);
-  int state = radio.transmit(output);
-  //Serial.print(F("[SX1276] Transmitting packet ... "));
-  if (state == RADIOLIB_ERR_NONE) {
-    // the packet was successfully transmitted
-    //Serial.println(F(" success!"));
+ Serial.println(output);
 
-    // print measured data rate
-    //Serial.print(F("[SX1276] Datarate:\t"));
-    //Serial.print(radio.getDataRate());
-    //Serial.println(F(" bps"));
+  // Transmit
+  digitalWrite(pin_rx_enable, LOW);
+  digitalWrite(pin_tx_enable, HIGH);
+  rf95.send((uint8_t *)output, strlen(output));
+  rf95.waitPacketSent();
+  digitalWrite(pin_tx_enable, LOW);
+  digitalWrite(pin_rx_enable, HIGH);
 
-  } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
-    // the supplied packet was longer than 256 bytes
-    //Serial.println(F("too long!"));
-
-  } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
-    // timeout occurred while transmitting packet
-    //Serial.println(F("timeout!"));
-
-  } else {
-    // some other error occurred
-    //Serial.print(F("failed, code "));
-    //Serial.println(state);
-  }
-  // clears RAM allocated to PVT processing - needs testing, might require re-initializing GPS every loop
-  //GNSS.end();
-  // reset watchdog timer
   Watchdog.reset();
-  // wait for a second before transmitting again
   delay(1000);
 }
