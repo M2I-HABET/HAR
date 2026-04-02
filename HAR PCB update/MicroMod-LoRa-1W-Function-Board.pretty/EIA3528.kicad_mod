@@ -1,0 +1,166 @@
+(footprint "EIA3528"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "Generic EIA 3528 polarized tantalum capacitor")
+	(property "Reference" "REF**"
+		(at 0 -1.778 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "6e261bdc-eacc-4208-ba61-5249fcd72b83")
+		(effects
+			(font
+				(size 0.48768 0.48768)
+				(thickness 0.12192)
+			)
+			(justify bottom)
+		)
+	)
+	(property "Value" "EIA3528"
+		(at 0 1.778 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "1677c6eb-55bd-4679-a69d-09fe37907b2d")
+		(effects
+			(font
+				(size 0.48768 0.48768)
+				(thickness 0.12192)
+			)
+			(justify top)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7731ca0c-c6b3-44f8-9832-4e6b05d1c19e")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "4cb5daf8-6f4f-4e54-9659-daa09d6aaed0")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(fp_line
+		(start 2.641 -1.311)
+		(end 2.641 1.286)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d3ddeb8a-81c9-48c9-ab29-6a493da46b67")
+	)
+	(fp_line
+		(start -2.6 -1.55)
+		(end -0.9 -1.55)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "0f5dafd9-d3b3-41d1-8024-b8d7e012ca8f")
+	)
+	(fp_line
+		(start -2.6 1.6)
+		(end -2.6 -1.55)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "d05e9ce9-7aaf-4347-a961-4f40f19e5641")
+	)
+	(fp_line
+		(start -0.9 1.6)
+		(end -2.6 1.6)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "dbd18d66-9c09-435d-9fcc-df64a9c90a10")
+	)
+	(fp_line
+		(start 1 1.55)
+		(end 2.2 1.55)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c3a26532-5870-447f-958d-faf37d9a8856")
+	)
+	(fp_line
+		(start 2.2 -1.55)
+		(end 1 -1.55)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "73ddf89d-4fc6-429f-9eb8-50048280fe7d")
+	)
+	(fp_line
+		(start 2.2 1.55)
+		(end 2.6 1.2)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "5edb70f8-262e-49c5-a233-50d22653e0a4")
+	)
+	(fp_line
+		(start 2.6 -1.25)
+		(end 2.2 -1.55)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "6bef07dc-f1c6-4a85-a0cf-cc43974cd56c")
+	)
+	(fp_line
+		(start 2.6 1.2)
+		(end 2.6 -1.25)
+		(stroke
+			(width 0.2032)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "b5b55f5c-de05-4751-b348-0c3603d1737f")
+	)
+	(pad "A" smd rect
+		(at 1.65 0 90)
+		(size 2.5 1.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(solder_mask_margin 0.1016)
+		(solder_paste_margin 0)
+		(thermal_bridge_angle 0)
+		(uuid "07f8a45d-ee16-426a-a427-0aec48386883")
+	)
+	(pad "C" smd rect
+		(at -1.65 0 90)
+		(size 2.5 1.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(solder_mask_margin 0.1016)
+		(solder_paste_margin 0)
+		(thermal_bridge_angle 0)
+		(uuid "62602e0c-069f-47e0-8560-73fe557c86d3")
+	)
+	(embedded_fonts no)
+)

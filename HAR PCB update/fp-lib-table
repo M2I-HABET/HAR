@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "MicroMod-LoRa-1W-Function-Board")(type "KiCad")(uri "$(KIPRJMOD)/MicroMod-LoRa-1W-Function-Board.pretty")(options "")(descr ""))
+)
