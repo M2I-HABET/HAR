@@ -30,6 +30,7 @@
   #endif
 #endif
 
+#define PIN_SPI_SS SS
 // SX1276 pin connections:
 //       | SLOT 0 | SLOT 1 |
 //==========================
