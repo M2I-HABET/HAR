@@ -1,0 +1,91 @@
+/*
+   HARL 1.1 Mobile Ground Station Receiver Code
+   Hardware based on HAR Light (HARL) Code used in Gemini Cube Satellite configuration
+   Processor: Adafruit Feather RP2040 (https://www.adafruit.com/product/5714) 
+   Radio: RFM95 w/RadioHead Library (https://www.airspayce.com/mikem/arduino/RadioHead/)
+
+   Created by Mattheew Nelson and Brandon Beaver
+   Based on example code by Wes Furuya
+   M2I HABET
+   Date Created: July 7, 2025
+   Last Updated: July 7, 2025
+
+   
+*/
+
+
+
+
+#include <Arduino.h>
+#include <RH_RF95.h>
+#include <Wire.h>
+#include <SPI.h>
+
+// SX1276 pin definitions for Feather RP2040 RFM
+#define RFM95_CS   16
+#define RFM95_RST  17
+#define RFM95_INT  21
+
+#define RF95_FREQ  915.0
+
+RH_RF95 rf95(RFM95_CS, RFM95_INT);
+
+int ledPin = 13;
+
+void setup() {
+  // Initialize LED for status
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  // Start Serial
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("LoRa Receiver Starting...");
+
+  // Reset LoRa module
+  pinMode(RFM95_RST, OUTPUT);
+  digitalWrite(RFM95_RST, HIGH);
+  delay(10);
+  digitalWrite(RFM95_RST, LOW);
+  delay(10);
+  digitalWrite(RFM95_RST, HIGH);
+  delay(10);
+
+  if (!rf95.init()) {
+    Serial.println("LoRa radio init failed.");
+    while (1);
+  }
+  Serial.println("LoRa radio init OK!");
+
+  if (!rf95.setFrequency(RF95_FREQ)) {
+    Serial.println("setFrequency failed");
+    while (1);
+  }
+  Serial.print("Set Frequency to: "); Serial.println(RF95_FREQ);
+
+  rf95.setTxPower(23, false);           // Match TX power
+  rf95.setSpreadingFactor(9);           // SF9
+  rf95.setSignalBandwidth(62500);       // 62.5 kHz
+  rf95.setCodingRate4(8);               // 4/8 coding rate
+
+  Serial.println("Receiver configured.");
+}
+
+void loop() {
+  if (rf95.available()) {
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+    uint8_t len = sizeof(buf);
+
+    if (rf95.recv(buf, &len)) {
+      buf[len] = '\0'; // null-terminate
+      Serial.print("Received packet: ");
+      Serial.println((char*)buf);
+
+      digitalWrite(ledPin, HIGH);
+      delay(100);
+      digitalWrite(ledPin, LOW);
+    } else {
+      Serial.println("Receive failed");
+    }
+  }
+}
